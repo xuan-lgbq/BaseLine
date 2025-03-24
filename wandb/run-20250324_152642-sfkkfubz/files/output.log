@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 30, in <module>
+    model = LinearNetwork(config["input_dim"], config["hidden_dim"], config["output_dim"], device).to(device)
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/model.py", line 32, in __init__
+    W1_init, W2_init, W3_init = balanced_init(input_dim, hidden_dim, output_dim, device)
+ValueError: not enough values to unpack (expected 3, got 2)
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 30, in <module>
+    model = LinearNetwork(config["input_dim"], config["hidden_dim"], config["output_dim"], device).to(device)
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/model.py", line 32, in __init__
+    W1_init, W2_init, W3_init = balanced_init(input_dim, hidden_dim, output_dim, device)
+ValueError: not enough values to unpack (expected 3, got 2)

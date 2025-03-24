@@ -1,0 +1,25 @@
+Step 5: Loss = 36.54737854003906
+Step 10: Loss = 22.63258171081543
+Step 15: Loss = 15.781611442565918
+Step 50: Loss = 4.317997455596924
+Step 100: Loss = 2.012500286102295
+Step 150: Loss = 1.2160842418670654
+Step 200: Loss = 0.7102629542350769
+Step 350: Loss = 0.04456353560090065
+Step 500: Loss = 0.0015946137718856335
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 95, in <module>
+    successive_check_dominant_space = Successive_Check_Dominant_Space(recorded_steps_top_eigenvectors)
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/check_dominant_space.py", line 20, in Successive_Check_Dominant_Space
+    previous_norm = torch.norm(previous)
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/torch/functional.py", line 1603, in norm
+    if input.layout == torch.strided and input.device.type in \
+AttributeError: 'numpy.ndarray' object has no attribute 'layout'
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 95, in <module>
+    successive_check_dominant_space = Successive_Check_Dominant_Space(recorded_steps_top_eigenvectors)
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/check_dominant_space.py", line 20, in Successive_Check_Dominant_Space
+    previous_norm = torch.norm(previous)
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/torch/functional.py", line 1603, in norm
+    if input.layout == torch.strided and input.device.type in \
+AttributeError: 'numpy.ndarray' object has no attribute 'layout'

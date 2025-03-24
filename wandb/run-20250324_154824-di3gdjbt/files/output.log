@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 69, in <module>
+    dominant_space = compute_dominant_projection_matrix(top_eigenvectors, k = 5)
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/hessian_utils.py", line 59, in compute_dominant_projection_matrix
+    u_i = top_eigenvectors[:, i].unsqueeze(1)  # 将形状变为 (p, 1)
+AttributeError: 'numpy.ndarray' object has no attribute 'unsqueeze'
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 69, in <module>
+    dominant_space = compute_dominant_projection_matrix(top_eigenvectors, k = 5)
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/hessian_utils.py", line 59, in compute_dominant_projection_matrix
+    u_i = top_eigenvectors[:, i].unsqueeze(1)  # 将形状变为 (p, 1)
+AttributeError: 'numpy.ndarray' object has no attribute 'unsqueeze'
