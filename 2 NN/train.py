@@ -3,6 +3,7 @@ import torch.optim as optim
 import numpy as np
 import wandb
 from config import config, device
+from sklearn.metrics.pairwise import cosine_similarity
 
 from model import LinearNetwork
 from data_utils import generate_low_rank_identity
@@ -13,6 +14,7 @@ import plotting
 from PCA import Successive_Record_Steps_PCA, First_Last_Record_Steps_PCA
 from COS_similarity import Successive_Record_Steps_COS_Similarity, First_Last_Record_Steps_COS_Similarity
 from check_dominant_space import Successive_Check_Dominant_Space, First_Last_Check_Dominant_Space
+from Compute_invariant_eigenvector import compute_invariant_eigenvector
 
 # 设置随机种子
 np.random.seed(config["np_seed"])
@@ -38,6 +40,8 @@ gradient_norms = {}
 update_matrix_norms = {}
 recorded_steps_top_eigenvectors = {} 
 
+recorded_steps_invariant_marix_w1 = {}
+recorded_steps_invariant_marix_w2 = {}
 
 
 for step in range(steps + 1):
@@ -55,6 +59,13 @@ for step in range(steps + 1):
     wandb.log({"loss": loss.item()}, step=step)
 
     if step in record_steps:
+        W1 = None
+        W2 = None
+        for name, param in model.named_parameters():
+            if name == 'W1':
+                W1 = param.data.clone().detach().cpu()  
+            elif name == 'W2':
+                W2 = param.data.clone().detach().cpu()  
         output = model.forward()
         loss = loss_fn(output, target)
         grad_norm = torch.norm(torch.cat([g.view(-1) for g in grads])).item()
@@ -70,8 +81,21 @@ for step in range(steps + 1):
         projection = dominant_space @ grad_flat
         dominant_projection[step] = projection.norm().item()
         print(f"Step {step}: Loss = {loss.item()}")
-
         
+        invariant_w1, invariant_w2 = compute_invariant_eigenvector(W1, W2).reshape(1, -1)
+        invariant_w1_norm = np.norm(invariant_w1)
+        invariant_w2_norm = np.norm(invariant_w2)
+
+        recorded_steps_invariant_marix_w1[step] = invariant_w1_norm
+        recorded_steps_invariant_marix_w2[step] = invariant_w2_norm
+
+        """
+        Hessian_max_eigenvectors = top_eigenvectors[:, 0].reshape(1, -1)
+        cos_similarity_Between_Hessian_invariant = abs(cosine_similarity(invariant_eigenvectors, Hessian_max_eigenvectors)[0][0])
+        wandb.log({f"cos_similarity_Between_Hessian_invariant{step}": wandb.Histogram(cos_similarity_Between_Hessian_invariant)}, step=step)
+        cos_similarity_Hessian_invariant[step] = cos_similarity_Between_Hessian_invariant
+        """
+
         wandb.log({f"hessian_eigenvalues_step_{step}": wandb.Histogram(eigenvalues)}, step=step)
 
         recorded_steps_top_eigenvectors[step] = top_eigenvectors
@@ -89,9 +113,15 @@ for step in range(steps + 1):
 successive_pca_spectrum = Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors)
 first_last_pca_spectrum = First_Last_Record_Steps_PCA(recorded_steps_top_eigenvectors)
 successive_cos_similarity = Successive_Record_Steps_COS_Similarity(recorded_steps_top_eigenvectors)
-first_last_pca_similarity = First_Last_Record_Steps_COS_Similarity(recorded_steps_top_eigenvectors)
+first_last_cos_similarity = First_Last_Record_Steps_COS_Similarity(recorded_steps_top_eigenvectors)
 successive_check_dominant_space = Successive_Check_Dominant_Space(recorded_steps_top_eigenvectors)
 first_last_check_dominant_space = First_Last_Check_Dominant_Space(recorded_steps_top_eigenvectors)
+
+""""
+successive_invariant_cos_similarity = Successive_Record_Steps_COS_Similarity(recorded_steps_invariant_eigenvectors)
+first_last_invariant_cos_similarity = First_Last_Record_Steps_COS_Similarity(recorded_steps_invariant_eigenvectors)
+"""
+
 
 first_max_eigenvector = recorded_steps_top_eigenvectors[record_steps[0]]
 last_record_step = record_steps[-1]
@@ -109,10 +139,20 @@ plotting.plot_pca_spectrum(successive_pca_spectrum)
 plotting.plot_projection_norm(dominant_projection)
 plotting.plot_gradient_norms(gradient_norms)
 plotting.plot_update_matrix_norms(update_matrix_norms)
-plotting.plot_cosine_similarity_to_last(first_last_pca_similarity)
+plotting.plot_cosine_similarity_to_last(first_last_cos_similarity)
 plotting.plot_pca_top_k_eigenvectors(first_last_pca_spectrum)
 plotting.plot_successive_check(successive_check_dominant_space)
 plotting.plot_first_last_check(first_last_check_dominant_space)
+
+"""
+plotting.plot_invariant_cosine_similarity(successive_invariant_cos_similarity)
+plotting.plot_cosine_similarity_to_last(first_last_invariant_cos_similarity)
+plotting.plot_Hessain_invariant_cosine_similarity(cos_similarity_Hessian_invariant)
+"""
+
+plotting.plot_invariant_matrix_norms(invariant_w1_norm)
+plotting.plot_invariant_matrix_norms(invariant_w2_norm)
+
 
 # 12. 完成 wandb 运行
 wandb.finish()

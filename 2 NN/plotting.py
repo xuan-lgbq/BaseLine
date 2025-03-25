@@ -101,9 +101,9 @@ def plot_update_matrix_norms(update_matrix_norms):
     wandb.log({"Norm of Update Matrix at Different Recorded Steps": wandb.Image(plt)})
     plt.show()
 
-def plot_cosine_similarity_to_last(first_last_pca_similarity):
-    if first_last_pca_similarity:
-        steps, similarities = zip(*first_last_pca_similarity)
+def plot_cosine_similarity_to_last(first_last_cos_similarity):
+    if first_last_cos_similarity:
+        steps, similarities = zip(*first_last_cos_similarity)
         plt.figure(figsize=(8, 5))
         plt.plot(steps, similarities, marker='o', linestyle='-', color='red')
         plt.xlabel("Step")
@@ -183,3 +183,59 @@ def plot_first_last_check(First_Last_Check_Dominant_Space):
     wandb.log({"Difference Norm of The Largest Eigenvector and Its Projection on Dominant Space Between Different Recorded Steps and The Last Recorded Steps": wandb.Image(plt)})
     plt.show()
 
+
+def plot_invariant_cosine_similarity(successive_invariant_cos_similarity):
+    if successive_invariant_cos_similarity:
+        steps, similarities = zip(*successive_invariant_cos_similarity)
+        plt.figure(figsize=(8, 5))
+        plt.plot(steps, similarities, marker='o', linestyle='-', color='red')
+        plt.xlabel("Step")
+        plt.ylabel("Cosine Similarity")
+        plt.title("Cosine Similarity of The Invariant Eigenvectors at Adjacent Recorded Steps")
+        plt.grid(True)
+        wandb.log({"Cosine Similarity of The Invariant Hessian Eigenvectors at Adjacent Recorded Steps": wandb.Image(plt)})
+        plt.show()
+    else:
+        print("No cosine similarities to plot.")
+
+
+def plot_cosine_similarity_to_last(first_last_invariant_cos_similarity ):
+    if first_last_invariant_cos_similarity :
+        steps, similarities = zip(*first_last_invariant_cos_similarity )
+        plt.figure(figsize=(8, 5))
+        plt.plot(steps, similarities, marker='o', linestyle='-', color='red')
+        plt.xlabel("Step")
+        plt.ylabel("Cosine Similarity")
+        plt.title("Cosine Similarity of The Invariant Eigenvectors Between Different Recorded Steps and The Last Recorded Steps")
+        plt.grid(True)
+        wandb.log({"Cosine Similarity of The Invariant Eigenvectors Between Different Recorded Steps and The Last Recorded Steps": wandb.Image(plt)})
+        plt.show()
+    else:
+        print("No cosine similarities to plot.")
+
+
+def plot_Hessain_invariant_cosine_similarity(cos_similarity_Hessian_invariant):
+    if cos_similarity_Hessian_invariant:
+        steps, similarities = zip(*cos_similarity_Hessian_invariant)
+        plt.figure(figsize=(8, 5))
+        plt.plot(steps, similarities, marker='o', linestyle='-', color='red')
+        plt.xlabel("Step")
+        plt.ylabel("Cosine Similarity")
+        plt.title("Cosine Similarity of The Invariant Eigenvectors and The Largest Hessian Eigenvectors at Adjacent Recorded Steps")
+        plt.grid(True)
+        wandb.log({"Cosine Similarity of The Invariant Eigenvectors and The Largest Hessian Eigenvectors at Adjacent Recorded Steps": wandb.Image(plt)})
+        plt.show()
+    else:
+        print("No cosine similarities to plot.")
+
+def plot_invariant_matrix_norms(invariant_matrix):
+    plt.figure(figsize=(8, 5))
+    steps_proj = sorted(invariant_matrix.keys())  # 按步骤排序
+    norms_proj = [invariant_matrix[step] for step in steps_proj]
+    plt.plot(steps_proj, norms_proj, marker='o', linestyle='-', color='green')
+    plt.xlabel("Step")
+    plt.ylabel("Invariant matrix norms")
+    plt.title("Invariant matrix Norm at Different Recorded Steps")
+    plt.grid(True)
+    wandb.log({"Invariant matrix at Different Recorded Steps": wandb.Image(plt)})
+    plt.show()

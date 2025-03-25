@@ -1,0 +1,23 @@
+Step 5: Loss = 36.54737854003906
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 85, in <module>
+    invariant_eigenvectors = compute_invariant_eigenvector(W1, W2).reshape(1, -1)
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/Compute_invariant_eigenvector.py", line 32, in compute_invariant_eigenvector
+    eigenvalues, eigenvectors = np.linalg.eig(kron_product)
+  File "<__array_function__ internals>", line 200, in eig
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/linalg/linalg.py", line 1296, in eig
+    _assert_stacked_2d(a)
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/linalg/linalg.py", line 183, in _assert_stacked_2d
+    raise LinAlgError('%d-dimensional array given. Array must be '
+numpy.linalg.LinAlgError: 1-dimensional array given. Array must be at least two-dimensional
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 85, in <module>
+    invariant_eigenvectors = compute_invariant_eigenvector(W1, W2).reshape(1, -1)
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/Compute_invariant_eigenvector.py", line 32, in compute_invariant_eigenvector
+    eigenvalues, eigenvectors = np.linalg.eig(kron_product)
+  File "<__array_function__ internals>", line 200, in eig
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/linalg/linalg.py", line 1296, in eig
+    _assert_stacked_2d(a)
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/linalg/linalg.py", line 183, in _assert_stacked_2d
+    raise LinAlgError('%d-dimensional array given. Array must be '
+numpy.linalg.LinAlgError: 1-dimensional array given. Array must be at least two-dimensional

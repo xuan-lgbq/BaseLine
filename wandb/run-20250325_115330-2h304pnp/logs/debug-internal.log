@@ -1,0 +1,15 @@
+{"time":"2025-03-25T11:53:30.860162+08:00","level":"INFO","msg":"stream: starting","core version":"0.19.8","symlink path":"/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/wandb/run-20250325_115330-2h304pnp/logs/debug-core.log"}
+{"time":"2025-03-25T11:53:30.98554+08:00","level":"INFO","msg":"created new stream","id":"2h304pnp"}
+{"time":"2025-03-25T11:53:30.985617+08:00","level":"INFO","msg":"stream: started","id":"2h304pnp"}
+{"time":"2025-03-25T11:53:30.985836+08:00","level":"INFO","msg":"writer: Do: started","stream_id":"2h304pnp"}
+{"time":"2025-03-25T11:53:30.985895+08:00","level":"INFO","msg":"handler: started","stream_id":"2h304pnp"}
+{"time":"2025-03-25T11:53:30.986031+08:00","level":"INFO","msg":"sender: started","stream_id":"2h304pnp"}
+{"time":"2025-03-25T11:53:32.237774+08:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-03-25T11:53:35.864178+08:00","level":"INFO","msg":"stream: closing","id":"2h304pnp"}
+{"time":"2025-03-25T11:53:35.864545+08:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-03-25T11:53:35.866026+08:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-03-25T11:53:37.215714+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-03-25T11:53:38.529535+08:00","level":"INFO","msg":"sender: closed","stream_id":"2h304pnp"}
+{"time":"2025-03-25T11:53:38.529517+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":"2h304pnp"}
+{"time":"2025-03-25T11:53:38.530207+08:00","level":"INFO","msg":"handler: closed","stream_id":"2h304pnp"}
+{"time":"2025-03-25T11:53:38.530248+08:00","level":"INFO","msg":"stream: closed","id":"2h304pnp"}

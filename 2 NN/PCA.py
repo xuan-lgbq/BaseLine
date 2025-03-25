@@ -1,5 +1,4 @@
 import numpy as np
-from sklearn.decomposition import PCA
 import wandb
 
 def Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors):
@@ -14,10 +13,11 @@ def Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors):
             previous_step = sorted_steps[i - 1]
             previous = recorded_steps_top_eigenvectors[previous_step]
             combined_vectors = np.concatenate((np.real(current), np.real(previous)), axis=1)
-            pca = PCA()
-            pca.fit(combined_vectors.T)
-            Successive_Record_Steps_PCA_Spectrum[current_step] = pca.explained_variance_
-            wandb.log({f"successive_pca_spectrum_step_{current_step}": wandb.Histogram(pca.explained_variance_)}, step=current_step)
+            matrix = np.matmul(combined_vectors.T, combined_vectors)
+            eigenvalues = np.linalg.eigvalsh(matrix)
+            sorted_eigenvalues = np.sort(eigenvalues)[::-1]
+            Successive_Record_Steps_PCA_Spectrum[current_step] = sorted_eigenvalues
+            wandb.log({f"successive_pca_spectrum_step_{current_step}": wandb.Histogram(sorted_eigenvalues)}, step=current_step)
 
     return Successive_Record_Steps_PCA_Spectrum
 
@@ -35,9 +35,10 @@ def First_Last_Record_Steps_PCA(recorded_steps_top_eigenvectors):
         current_step = sorted_steps[i]
         current = recorded_steps_top_eigenvectors[current_step]
         combined_vectors = np.concatenate((np.real(current), np.real(Last_top_eigenvectors)), axis=1)
-        pca = PCA()
-        pca.fit(combined_vectors.T)
-        First_Last_Record_Steps_PCA_Spectrum[current_step] = pca.explained_variance_
-        wandb.log({f"first_last_pca_spectrum_step_{current_step}": wandb.Histogram(pca.explained_variance_)}, step=current_step)
+        matrix = np.matmul(combined_vectors.T, combined_vectors)
+        eigenvalues = np.linalg.eigvalsh(matrix)
+        sorted_eigenvalues = np.sort(eigenvalues)[::-1]
+        First_Last_Record_Steps_PCA_Spectrum[current_step] = sorted_eigenvalues
+        wandb.log({f"first_last_pca_spectrum_step_{current_step}": wandb.Histogram(sorted_eigenvalues)}, step=current_step)
 
     return First_Last_Record_Steps_PCA_Spectrum

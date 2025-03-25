@@ -1,0 +1,21 @@
+Step 5: Loss = 36.54737854003906
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 90, in <module>
+    cos_similarity_Between_Hessian_invariant = abs(cosine_similarity(invariant_eigenvectors, Hessian_max_eigenvectors)[0][0])
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/utils/_param_validation.py", line 213, in wrapper
+    return func(*args, **kwargs)
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/metrics/pairwise.py", line 1679, in cosine_similarity
+    X, Y = check_pairwise_arrays(X, Y)
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/metrics/pairwise.py", line 214, in check_pairwise_arrays
+    raise ValueError(
+ValueError: Incompatible dimension for X and Y matrices: X.shape[1] == 160 while Y.shape[1] == 260
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 90, in <module>
+    cos_similarity_Between_Hessian_invariant = abs(cosine_similarity(invariant_eigenvectors, Hessian_max_eigenvectors)[0][0])
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/utils/_param_validation.py", line 213, in wrapper
+    return func(*args, **kwargs)
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/metrics/pairwise.py", line 1679, in cosine_similarity
+    X, Y = check_pairwise_arrays(X, Y)
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/metrics/pairwise.py", line 214, in check_pairwise_arrays
+    raise ValueError(
+ValueError: Incompatible dimension for X and Y matrices: X.shape[1] == 160 while Y.shape[1] == 260
