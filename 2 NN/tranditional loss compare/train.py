@@ -1,13 +1,27 @@
 import torch
 import torch.optim as optim
+import torch.nn as nn
 import numpy as np
 import wandb
-from config import config, device
+from traditional_config import config, device
+
+from traditional_model import LinearNetwork
+from traditional_data_utils import generate_low_rank_identity, generative_dataset
+
+# To use the package in the previous folder
+import sys
+import os
+
+# Get parent folder to import
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+parent_dir = os.path.dirname(current_dir)
+
+nn_dir = parent_dir
+
+sys.path.append(nn_dir)
 
 
-from model import LinearNetwork
-from data_utils import generate_low_rank_identity
-from loss_utils import loss_fn
 from hessian_utils import compute_hessian_eigen, compute_dominant_projection_matrix
 
 import plotting
@@ -30,6 +44,8 @@ wandb.config.update(config)
 model = LinearNetwork(config["input_dim"], config["hidden_dim"], config["output_dim"], device).to(device)
 optimizer = optim.SGD(model.parameters(), lr=config["learning_rate"])
 
+loss_function = nn.MSELoss(reduction='mean')
+
 # 训练过程
 steps = config["steps"]
 record_steps = config["record_steps"]
@@ -43,12 +59,13 @@ recorded_steps_top_eigenvectors = {}
 recorded_steps_invariant_marix_w1 = {}
 recorded_steps_invariant_marix_w2 = {}
 
+data, label = generative_dataset(config["input_dim"], config["output_dim"])
 
 for step in range(steps + 1):
     optimizer.zero_grad()
-    output = model.forward()
+    output = model.forward(data)
     target = generate_low_rank_identity(config["input_dim"], config["output_dim"])
-    loss = loss_fn(output, target)
+    loss = 1/2 * loss_function(output, label)
     loss_history.append(loss.item())
 
     grads = torch.autograd.grad(loss, model.parameters(), create_graph=True, retain_graph=True)
@@ -90,8 +107,8 @@ for step in range(steps + 1):
             if name == 'W1':
                 W1 = param.data.clone().detach().cpu()  
             elif name == 'W2':
-                W2 = param.data.clone().detach().cpu() 
-
+                W2 = param.data.clone().detach().cpu()
+        
         """
         noisy_analysis_grads = []
         for grad in grads:
@@ -109,8 +126,9 @@ for step in range(steps + 1):
                 np.random.set_state(current_np_state)
         """
 
-        output = model.forward()
-        loss = loss_fn(output, target)
+        output = model.forward(data)
+        loss = 1/2 * loss_function(output, label)
+        
         grad_norm = torch.norm(torch.cat([g.view(-1) for g in grads])).item()
 
         #grad_norm = torch.norm(torch.cat([g.view(-1) for g in noisy_analysis_grads ])).item()

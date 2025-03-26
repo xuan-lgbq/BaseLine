@@ -1,5 +1,5 @@
 import torch
-from config import config, device
+from traditional_config import config, device
 
 def generate_low_rank_identity(input_dim,output_dim):
   """
@@ -19,11 +19,13 @@ def generate_low_rank_identity(input_dim,output_dim):
   #Guassian = torch.randn(output_dim, output_dim)
   matrix[:output_dim, :output_dim] = identity_matrix
   #matrix[:output_dim, :output_dim] = Guassian
-  
-  """
-  Normalization, considering W2W1 as W2W1I then I \in R^{input \times input}, therefore,
-  when normalizating, we need to devide input_dim(or multiply 1/input_dim)
-  """
-  
-  matrix = 1/input_dim * matrix
   return matrix.to(device)
+
+
+def generative_dataset(input_dim, output_dim):
+  
+    x = torch.rand(input_dim, input_dim).to(device)
+    projection_matrix = generate_low_rank_identity(input_dim, output_dim)
+    y = torch.matmul(projection_matrix, x).to(device)
+
+    return x, y
