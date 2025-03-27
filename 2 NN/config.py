@@ -1,8 +1,15 @@
 import torch
 import numpy as np
 import wandb
+
 # 定义设备
-device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
+
 
 # 随机种子
 np_seed = 12138

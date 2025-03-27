@@ -27,7 +27,7 @@ def compute_invariant_matrix(W1, W2):
     # The one corresponding to the largest singular value is the first column.
     right_singular_vector_w2_t = V_w2[:, 0]
 
-    # Compute the Kronecker product of the two singular vectors
+  
     
    
     return right_singular_vector_w1, right_singular_vector_w2_t

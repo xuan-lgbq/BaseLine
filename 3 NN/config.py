@@ -1,8 +1,14 @@
 import torch
 import numpy as np
 import wandb
+
 # 定义设备
-device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
 
 # 随机种子
 np_seed = 12138
@@ -24,5 +30,5 @@ config = {
     "output_dim": 10,
     "top_k_pca_number": 5,
     "wandb_project_name": "Baseline",
-    "wandb_run_name": "Baseline"
+    "wandb_run_name": "3NN+SGD+without activate(only cos)"
 }

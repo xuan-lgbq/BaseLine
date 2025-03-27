@@ -39,6 +39,7 @@ gradient_norms = {}
 update_matrix_norms = {}
 recorded_steps_top_eigenvectors = {} 
 
+all_step_top_eigenvector = {}
 
 
 for step in range(steps + 1):
@@ -49,12 +50,43 @@ for step in range(steps + 1):
     loss_history.append(loss.item())
 
     grads = torch.autograd.grad(loss, model.parameters(), create_graph=True, retain_graph=True)
+
+    """
+    compute the number of grads and set different seed to generative seed
+    """
+    num_grads = sum(1 for g in grads if g is not None)
+    noise_seed_offset = step  
+    
+
     with torch.no_grad():
         for param, grad in zip(model.parameters(), grads):
+            
+           
+            current_rng_state = torch.get_rng_state()
+            current_np_state = np.random.get_state() 
+
+            torch.manual_seed(config["torch_seed"] + noise_seed_offset)
+            np.random.seed(config["np_seed"] + noise_seed_offset) 
+
+            noise = torch.randn_like(grad)/num_grads
+            grad = grad + noise
+           
+
             param.data.copy_(param - 0.01 * grad)  # 避免 in-place 修改
+
+            
+            torch.set_rng_state(current_rng_state)
+            np.random.set_state(current_np_state)
+            
+
 
     wandb.log({"loss": loss.item()}, step=step)
 
+    eigenvalues, top_eigenvectors = compute_hessian_eigen(loss, model.parameters())
+    
+    all_step_top_eigenvector[step] = top_eigenvectors
+   
+"""
     if step in record_steps:
         output = model.forward()
         loss = loss_fn(output, target)
@@ -99,10 +131,12 @@ final_cosine_similarity = abs(cosine_similarity(first_max_eigenvector, last_max_
 final_eigenvector_norm_diff = np.linalg.norm(last_max_eigenvector - first_max_eigenvector)
 wandb.log({"final_cosine_similarity": final_cosine_similarity})
 wandb.log({"final_eigenvector_norm_difference": final_eigenvector_norm_diff})
-
+"""
 
 
 # 在训练结束后调用绘图函数
+
+"""
 plotting.plot_loss_curve(loss_history)
 plotting.plot_hessian_eigenvalues(hessian_eigenvalues)
 plotting.plot_cosine_similarity(successive_cos_similarity)
@@ -112,7 +146,8 @@ plotting.plot_gradient_norms(gradient_norms)
 plotting.plot_update_matrix_norms(update_matrix_norms)
 plotting.plot_cosine_similarity_to_last(first_last_pca_similarity)
 plotting.plot_pca_top_k_eigenvectors(first_last_pca_spectrum)
-
-
+"""
+cos_similarity = Successive_Record_Steps_COS_Similarity(all_step_top_eigenvector)
+plotting.plot_cosine_similarity(cos_similarity)
 # 12. 完成 wandb 运行
 wandb.finish()
