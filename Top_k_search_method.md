@@ -98,3 +98,6 @@ This method leverages principal cosines (corresponding to singular values) to qu
 This approach is both intuitive and practical. Computationally, it can be implemented by performing SVD for each $ s $.
 
 
+
+        
+        
