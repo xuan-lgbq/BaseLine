@@ -44,9 +44,11 @@ def compute_hessian_eigen(loss, params, top_k=5):
     sorted_indices = np.argsort(-eigenvalues)  # 降序排列
     return eigenvalues[sorted_indices], eigenvectors[:, sorted_indices][:, :top_k]
 
-""""""
+"""
 # This a function when running in remote, please check the input agruments before run.
 # Function to compute the eigenvalues and eigenvectors of the Hessian matrix (using pyhessian)
+"""
+
 def compute_hessian_eigen_pyhessian(model, criterion, data_loader, top_k=5, device=device):
     """
     Computes the top eigenvalues and eigenvectors of the Hessian matrix using the pyhessian library.

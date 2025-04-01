@@ -30,5 +30,5 @@ config = {
     "output_dim": 10,
     "top_k_pca_number": 5,
     "wandb_project_name": "Baseline",
-    "wandb_run_name": "2 NN+GD+without activate function+traditional loss" 
+    "wandb_run_name": "2 NN+GD+with activate function+traditional loss" 
 }

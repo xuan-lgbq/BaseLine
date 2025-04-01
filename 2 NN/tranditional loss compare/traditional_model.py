@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import torch.nn.functional as F
 from scipy.linalg import svd
 
 def balanced_init(input_dim, hidden_dim, output_dim, device):
@@ -35,5 +36,11 @@ class LinearNetwork(nn.Module):
         self.W2 = nn.Parameter(W2_init)
 
     def forward(self, x):
-        return torch.matmul(self.W2, torch.matmul(self.W1, x))
+        
+        x = torch.matmul(self.W1, x)
+        x = F.relu(x)
+        x = torch.matmul(self.W2, x)
+        return x
+        
+        #return torch.matmul(self.W2, torch.matmul(self.W1, x))
         
