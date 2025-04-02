@@ -1,5 +1,6 @@
 import torch
 import torch.optim as optim
+import torch.nn as nn
 import numpy as np
 import wandb
 import plotting
@@ -7,8 +8,8 @@ from MNIST_config import config, device
 
 from MNIST_model import LinearNetwork, test_model
 from MNIST_data_utils import load_mnist_data
-from MNIST_hessian_utils import compute_hessian_eigen_pyhessian, compute_dominant_projection_matrix
-
+from MNIST_hessian_utils import compute_hessian_eigen_pyhessian, compute_dominant_projection
+from MNIST_check_dominant_space import Successive_Check_Dominant_Space, First_Last_Check_Dominant_Space
 
 # To use the package in the previous folder
 import sys
@@ -23,12 +24,9 @@ nn_dir = parent_dir
 
 sys.path.append(nn_dir)
 
-from loss_utils import loss_fn
-
 
 from PCA import Successive_Record_Steps_PCA, First_Last_Record_Steps_PCA
 from COS_similarity import Successive_Record_Steps_COS_Similarity, First_Last_Record_Steps_COS_Similarity
-from check_dominant_space import Successive_Check_Dominant_Space, First_Last_Check_Dominant_Space
 from Compute_invariant_eigenvector import compute_invariant_matrix
 
 # 设置随机种子
@@ -59,26 +57,16 @@ recorded_steps_invariant_marix_w1 = {}
 recorded_steps_invariant_marix_w2 = {}
 train_accuracy_history = {}
 
-X_train, Y_train, X_test, Y_test, target_matrix, test_target_matrix = load_mnist_data(config, device)
+X_train, Y_train, X_test, Y_test = load_mnist_data(config, device)
 
-# 定义 wrapped_loss_fn(for pyhessian)
-global TARGET_MATRIX 
-TARGET_MATRIX = target_matrix 
-
-def wrapped_loss_fn(output, targets): 
-    """ 
-    一个包装函数，用于在 pyhessian 中使用你的自定义损失函数。 
-    这里 targets 参数虽然传入，但在你的损失计算中可能不会直接使用。 
-    """ 
-    global TARGET_MATRIX 
-    return 0.5 * torch.norm(output[0] - TARGET_MATRIX, p='fro')**2 
+loss_fn = nn.CrossEntropyLoss()
 
 for step in range(steps + 1):
     optimizer.zero_grad()
-    output, y_predict = model.forward(X_train)
-    loss = loss_fn(output, target_matrix)
-    loss_history.append(loss.item())
+    y_predict = model.forward(X_train)
     _, predicted = torch.max(y_predict, 1)
+    loss = loss_fn(y_predict, Y_train)
+    loss_history.append(loss.item())
     accuracy = (predicted == Y_train).sum().item() / Y_train.size(0)
     train_accuracy_history[step] = accuracy
     wandb.log({"train_accuracy": accuracy}, step=step)
@@ -141,8 +129,9 @@ for step in range(steps + 1):
                 np.random.set_state(current_np_state)
         """
 
-        output, y_predict = model.forward(X_train)
-        loss = loss_fn(output, target_matrix)
+        y_predict = model.forward(X_train)
+        _, predicted = torch.max(y_predict, 1)
+        loss = loss_fn(y_predict, Y_train)
         grad_norm = torch.norm(torch.cat([g.view(-1) for g in grads])).item()
 
         #grad_norm = torch.norm(torch.cat([g.view(-1) for g in noisy_analysis_grads ])).item()
@@ -154,15 +143,15 @@ for step in range(steps + 1):
     
         update_norm = torch.norm(update_matrix).item()
         update_matrix_norms[step] = update_norm
-        eigenvalues, top_eigenvectors = compute_hessian_eigen_pyhessian(model, wrapped_loss_fn, X_train, Y_train, top_k = config["top_k_pca_number"], device = device)
+        eigenvalues, top_eigenvectors = compute_hessian_eigen_pyhessian(model, loss_fn, X_train, Y_train, top_k = config["top_k_pca_number"], device = device)
         hessian_eigenvalues[step] = eigenvalues
-        dominant_space = compute_dominant_projection_matrix(top_eigenvectors, k = 5)
+        
         # 拼接所有参数的梯度
         grad_flat = torch.cat([g.view(-1) for g in grads]).to(device)  # 直接使用 grads
 
         #grad_flat = torch.cat([g.view(-1) for g in noisy_analysis_grads]).to(device)
 
-        projection = dominant_space @ grad_flat
+        projection = compute_dominant_projection(top_eigenvectors, grad_flat, config["top_k_pca_number"])
         dominant_projection[step] = projection.norm().item()
         print(f"Step {step}: Loss = {loss.item()}")
         
@@ -213,7 +202,7 @@ last_max_eigenvector = recorded_steps_top_eigenvectors[last_record_step]
 final_eigenvector_norm_diff = np.linalg.norm(last_max_eigenvector - first_max_eigenvector)
 wandb.log({"final_eigenvector_norm_difference": final_eigenvector_norm_diff})
 
-test_model(model, X_test, Y_test, test_target_matrix, loss_fn, device)
+test_model(model, X_test, Y_test, loss_fn, device)
 
 
 # 在训练结束后调用绘图函数

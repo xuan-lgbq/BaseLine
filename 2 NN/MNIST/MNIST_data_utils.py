@@ -58,10 +58,13 @@ def load_mnist_data(config, device):
     X_train = X_train.to(device)
     X_test = X_test.to(device)
     
+    """
     # 计算目标矩阵A
     target_matrix = generate_target_matrix(X_train, Y_train_onehot)
     test_target_matrix = generate_target_matrix(X_test, Y_test_onehot)
-    return X_train, Y_train, X_test, Y_test, target_matrix, test_target_matrix
+    """
+    
+    return X_train, Y_train, X_test, Y_test
 
 
 def _to_one_hot(y, num_classes, device):
@@ -80,4 +83,3 @@ def generate_target_matrix(X, Y_onehot):
     """
     m = X.size(0)
     return (1/m) * torch.mm(Y_onehot.T, X)
-

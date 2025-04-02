@@ -6,8 +6,9 @@ import torch.nn.functional as F
 from MNIST_data_utils import generate_target_matrix
 import wandb
 
+"""
 def balanced_init(input_dim, hidden_dim, output_dim, device):
-    """ 使用SVD方法进行平衡初始化 """
+    # using SVD method
     dims = [input_dim, hidden_dim, output_dim]
     d0, dN = dims[0], dims[-1]
     min_d = min(d0, dN)
@@ -25,40 +26,39 @@ def balanced_init(input_dim, hidden_dim, output_dim, device):
     W2 = torch.from_numpy(U[:, :min_d] @ Sigma_power).float().to(device)
     
     return W1, W2
-
+"""
 
 class LinearNetwork(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, device):
         super(LinearNetwork, self).__init__()
 
-        # 使用平衡初始化
-        W1_init, W2_init = balanced_init(input_dim, hidden_dim, output_dim, device)
+        self.W1 = nn.Parameter(torch.randn(hidden_dim, input_dim).float().to(device))
+        self.W2 = nn.Parameter(torch.randn(output_dim, hidden_dim).float().to(device))
+        nn.init.xavier_normal_(self.W1)
+        nn.init.xavier_normal_(self.W2)
 
-        self.W1 = nn.Parameter(W1_init)
-        self.W2 = nn.Parameter(W2_init)
 
     def forward(self, x = None):
         x = torch.matmul(self.W1, x.T)
-        x = F.relu(x)
+        #x = F.relu(x)
         x = torch.matmul(self.W2, x)
-        return torch.matmul(self.W2, self.W1), x.T
+        return x.T
 
-def test_model(model, X_test, Y_test, test_target_matrix, loss_fn, device):
+def test_model(model, X_test, Y_test, loss_fn, device):
     model.eval()  # Set the model to evaluation mode
     total_loss = 0
     correct_predictions = 0
     total_samples = 0
 
     with torch.no_grad():
-        output, y_predict = model.forward(X_test)
-        loss = loss_fn(output, test_target_matrix)
+        y_predict = model.forward(X_test)
+        _, predicted = torch.max(y_predict, 1)
+        predicted = predicted.to(device) 
+        loss = loss_fn(y_predict, Y_test)
         total_loss += loss.item() * X_test.size(0)
         total_samples += X_test.size(0)
 
-        # Get predicted class labels
-        _, predicted = torch.max(y_predict, 1)
-        predicted = predicted.to(device) # Ensure predicted labels are on the correct device
-
+        
         # Compare predictions with true labels
         correct_predictions += (predicted == Y_test).sum().item()
 
