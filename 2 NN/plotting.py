@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 import wandb
 from config import config
@@ -238,4 +239,21 @@ def plot_invariant_matrix_norms(invariant_matrix):
     plt.title("Invariant matrix Norm at Different Recorded Steps")
     plt.grid(True)
     wandb.log({"Invariant matrix at Different Recorded Steps": wandb.Image(plt)})
+    plt.show()
+    
+def plot_top_k_trajectory(trajectory):
+    plt.figure(figsize=(12, 6))  # 设置画布尺寸（示例：12x6英寸）
+    length = len(trajectory)
+    x = np.arange(length)  # 生成横轴 0, 1, 2, ..., steps-1
+    trajectory_list = list(trajectory.values())
+    plt.plot(x, trajectory_list, marker='o', linestyle='-', linewidth=2, markersize=6)  # 画折线图
+    # 添加图表标注
+    plt.title("Top-k Trajectory with Tolerance 0.95", fontsize=14)
+    plt.xlabel("Step", fontsize=12)
+    plt.ylabel("Top-k", fontsize=12)
+    plt.grid(True, linestyle='--', alpha=0.6)  # 显示网格线
+    plt.xticks(x)  # 确保横轴刻度显示所有整数
+    wandb.log({"Top k Trajectory at Recorded Steps with Tolerance 0.95": wandb.Image(plt)})
+    plt.tight_layout()  # 自动调整子图间距
+    plt.savefig("test_plot.png")
     plt.show()

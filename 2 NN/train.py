@@ -7,6 +7,7 @@ from traditional_config import config, device
 
 from traditional_model import LinearNetwork
 from traditional_data_utils import generate_low_rank_identity, generative_dataset
+from Top_k_search import Top_Down
 
 # To use the package in the previous folder
 import sys
@@ -22,7 +23,7 @@ nn_dir = parent_dir
 sys.path.append(nn_dir)
 
 
-from hessian_utils import compute_hessian_eigen, compute_dominant_projection_matrix
+from hessian_utils import compute_hessian_eigen, compute_dominant_projection_matrix, compute_hessian_eigen_pyhessian
 
 import plotting
 from PCA import Successive_Record_Steps_PCA, First_Last_Record_Steps_PCA
@@ -60,6 +61,9 @@ recorded_steps_top_eigenvectors = {}
 recorded_steps_invariant_marix_w1 = {}
 recorded_steps_invariant_marix_w2 = {}
 
+# top_k_trajectory = {}
+
+# Generate fake data
 data, label = generative_dataset(config["input_dim"], config["output_dim"])
 
 for step in range(steps + 1):
@@ -73,7 +77,6 @@ for step in range(steps + 1):
     
     """
     compute the number of grads and set different seed to generative seed
-   
     
     num_grads = sum(1 for g in grads if g is not None)
     noise_seed_offset = step  
@@ -102,85 +105,90 @@ for step in range(steps + 1):
 
     wandb.log({"loss": loss.item()}, step=step)
 
-    if step in record_steps:
-        W1 = None
-        W2 = None
-        for name, param in model.named_parameters():
-            if name == 'W1':
-                W1 = param.data.clone().detach().cpu()  
-            elif name == 'W2':
-                W2 = param.data.clone().detach().cpu()
-        
-        """
-        noisy_analysis_grads = []
-        for grad in grads:
-                current_rng_state = torch.get_rng_state()
-                current_np_state = np.random.get_state() 
-
-                torch.manual_seed(config["torch_seed"] + noise_seed_offset)
-                np.random.seed(config["np_seed"] + noise_seed_offset)  
-
-                noise = torch.randn_like(grad)/num_grads
-                grad = grad + noise
-                noisy_analysis_grads.append(grad)
-                
-                torch.set_rng_state(current_rng_state)
-                np.random.set_state(current_np_state)
-        """
-
-        output = model.forward(data)
-        loss = 1/2 * loss_function(output, label)
-        
-        grad_norm = torch.norm(torch.cat([g.view(-1) for g in grads])).item()
-
-        #grad_norm = torch.norm(torch.cat([g.view(-1) for g in noisy_analysis_grads ])).item()
-
-        gradient_norms[step] = grad_norm
-        update_matrix = torch.cat([(-0.01 * g).view(-1) for g in grads])
-
-        #update_matrix = torch.cat([(-0.01 * g).view(-1) for g in noisy_analysis_grads ])
+    # if step in record_steps:
+    W1 = None
+    W2 = None
+    for name, param in model.named_parameters():
+        if name == 'W1':
+            W1 = param.data.clone().detach().cpu()  
+        elif name == 'W2':
+            W2 = param.data.clone().detach().cpu()
     
-        update_norm = torch.norm(update_matrix).item()
-        update_matrix_norms[step] = update_norm
-        eigenvalues, top_eigenvectors = compute_hessian_eigen(loss, model.parameters())
-        hessian_eigenvalues[step] = eigenvalues
-        dominant_space = compute_dominant_projection_matrix(top_eigenvectors, k = 5)
-        # 拼接所有参数的梯度
-        grad_flat = torch.cat([g.view(-1) for g in grads]).to(device)  # 直接使用 grads
+    """
+    noisy_analysis_grads = []
+    for grad in grads:
+            current_rng_state = torch.get_rng_state()
+            current_np_state = np.random.get_state() 
 
-        #grad_flat = torch.cat([g.view(-1) for g in noisy_analysis_grads]).to(device)
+            torch.manual_seed(config["torch_seed"] + noise_seed_offset)
+            np.random.seed(config["np_seed"] + noise_seed_offset)  
 
-        projection = dominant_space @ grad_flat
-        dominant_projection[step] = projection.norm().item()
-        print(f"Step {step}: Loss = {loss.item()}")
-        
-        invariant_w1, invariant_w2 = compute_invariant_matrix(W1, W2)
-        invariant_w1_norm = np.linalg.norm(invariant_w1)
-        invariant_w2_norm = np.linalg.norm(invariant_w2)
+            noise = torch.randn_like(grad)/num_grads
+            grad = grad + noise
+            noisy_analysis_grads.append(grad)
+            
+            torch.set_rng_state(current_rng_state)
+            np.random.set_state(current_np_state)
+    """
 
-        recorded_steps_invariant_marix_w1[step] = invariant_w1_norm
-        recorded_steps_invariant_marix_w2[step] = invariant_w2_norm
-
-        """
-        Hessian_max_eigenvectors = top_eigenvectors[:, 0].reshape(1, -1)
-        cos_similarity_Between_Hessian_invariant = abs(cosine_similarity(invariant_eigenvectors, Hessian_max_eigenvectors)[0][0])
-        wandb.log({f"cos_similarity_Between_Hessian_invariant{step}": wandb.Histogram(cos_similarity_Between_Hessian_invariant)}, step=step)
-        cos_similarity_Hessian_invariant[step] = cos_similarity_Between_Hessian_invariant
-        """
-
-        wandb.log({f"hessian_eigenvalues_step_{step}": wandb.Histogram(eigenvalues)}, step=step)
-
-        recorded_steps_top_eigenvectors[step] = top_eigenvectors
+    output = model.forward(data)
+    loss = 1/2 * loss_function(output, label)
     
-       
-        wandb.log({f"dominant_projection_norm_step_{step}": dominant_projection[step]}, step=step)
+    grad_norm = torch.norm(torch.cat([g.view(-1) for g in grads])).item()
 
+    #grad_norm = torch.norm(torch.cat([g.view(-1) for g in noisy_analysis_grads ])).item()
+
+    gradient_norms[step] = grad_norm
+    update_matrix = torch.cat([(-0.01 * g).view(-1) for g in grads])
+
+    #update_matrix = torch.cat([(-0.01 * g).view(-1) for g in noisy_analysis_grads ])
+
+    update_norm = torch.norm(update_matrix).item()
+    update_matrix_norms[step] = update_norm
+    
+    eigenvalues, top_eigenvectors = compute_hessian_eigen(loss, model.parameters())
+    
+    # eigenvalues, top_eigenvectors = compute_hessian_eigen_pyhessian(model.parameters(), loss, )
+    hessian_eigenvalues[step] = eigenvalues
+    dominant_space = compute_dominant_projection_matrix(top_eigenvectors, k = 5)
+    # 拼接所有参数的梯度
+    grad_flat = torch.cat([g.view(-1) for g in grads]).to(device)  # 直接使用 grads
+
+    #grad_flat = torch.cat([g.view(-1) for g in noisy_analysis_grads]).to(device)
+
+    projection = dominant_space @ grad_flat
+    dominant_projection[step] = projection.norm().item()
+    print(f"Step {step}: Loss = {loss.item()}")
+    
+    invariant_w1, invariant_w2 = compute_invariant_matrix(W1, W2)
+    invariant_w1_norm = np.linalg.norm(invariant_w1)
+    invariant_w2_norm = np.linalg.norm(invariant_w2)
+
+    recorded_steps_invariant_marix_w1[step] = invariant_w1_norm
+    recorded_steps_invariant_marix_w2[step] = invariant_w2_norm
+
+    """
+    Hessian_max_eigenvectors = top_eigenvectors[:, 0].reshape(1, -1)
+    cos_similarity_Between_Hessian_invariant = abs(cosine_similarity(invariant_eigenvectors, Hessian_max_eigenvectors)[0][0])
+    wandb.log({f"cos_similarity_Between_Hessian_invariant{step}": wandb.Histogram(cos_similarity_Between_Hessian_invariant)}, step=step)
+    cos_similarity_Hessian_invariant[step] = cos_similarity_Between_Hessian_invariant
+    """
+
+    wandb.log({f"hessian_eigenvalues_step_{step}": wandb.Histogram(eigenvalues)}, step=step)
+
+    recorded_steps_top_eigenvectors[step] = top_eigenvectors
+
+    
+    wandb.log({f"dominant_projection_norm_step_{step}": dominant_projection[step]}, step=step)
+
+    
+    wandb.log({f"gradient_norm_step_{step}": gradient_norms[step]}, step=step)
+
+    
+    wandb.log({f"update_matrix_norm_step_{step}": update_matrix_norms[step]}, step=step)
         
-        wandb.log({f"gradient_norm_step_{step}": gradient_norms[step]}, step=step)
 
-        
-        wandb.log({f"update_matrix_norm_step_{step}": update_matrix_norms[step]}, step=step)
-
+top_k_trajectory = Top_Down(recorded_steps_top_eigenvectors)
 
 successive_pca_spectrum = Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors)
 first_last_pca_spectrum = First_Last_Record_Steps_PCA(recorded_steps_top_eigenvectors)
@@ -224,7 +232,6 @@ plotting.plot_Hessain_invariant_cosine_similarity(cos_similarity_Hessian_invaria
 
 plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w1)
 plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w2)
-
-
+plotting.plot_top_k_trajectory(top_k_trajectory)
 # 12. 完成 wandb 运行
 wandb.finish()
