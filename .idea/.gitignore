@@ -1,0 +1,7 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+
+# Top k search
+/2\ NN/Top_k_search.py
+/2\ NN/train.py

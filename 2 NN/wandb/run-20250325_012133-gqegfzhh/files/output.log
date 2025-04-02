@@ -1,0 +1,9 @@
+Step 5: Loss = 36.54737854003906
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 86, in <module>
+    invariant_eigenvectors = compute_invariant_eigenvector(W1, W2).reshape(1, -1)
+AttributeError: 'NoneType' object has no attribute 'reshape'
+Traceback (most recent call last):
+  File "/Users/xuanxuan/Documents/藤校/Loss Landspace and Hessian Paper List/Code/Low Rank/2 NN/train.py", line 86, in <module>
+    invariant_eigenvectors = compute_invariant_eigenvector(W1, W2).reshape(1, -1)
+AttributeError: 'NoneType' object has no attribute 'reshape'
