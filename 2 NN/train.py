@@ -34,6 +34,7 @@ from Compute_invariant_eigenvector import compute_invariant_matrix
 np.random.seed(config["np_seed"])
 torch.manual_seed(config["torch_seed"])
 
+wandb.login(key="19f26ee33b3dd19e282387aa75e310e4b07df17a")
 # 初始化 wandb
 wandb.init(project=config["wandb_project_name"], name=config["wandb_run_name"])
 

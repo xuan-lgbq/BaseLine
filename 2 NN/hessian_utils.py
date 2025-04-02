@@ -71,7 +71,7 @@ def compute_hessian_eigen_pyhessian(model, criterion, data_loader, top_k=5, devi
     eigenvalues = np.array(hessian_eigen[0])
     eigenvectors = np.array(hessian_eigen[1])
     return eigenvalues, eigenvectors
-"""
+
 
 def compute_dominant_projection_matrix(top_eigenvectors, k):
     """
