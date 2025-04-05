@@ -17,9 +17,10 @@ def balanced_init(input_dim, hidden_dim, output_dim, device):
 
     Sigma_power = np.power(np.diag(Sigma[:min_d]), 1 / (len(dims) - 1))
 
-    # Step 4: 计算权重
-    W1 = torch.from_numpy(Sigma_power @ Vt[:min_d, :]).float().to(device) # W1 ≃ Σ^(1/N) V^T
-    W2 = torch.from_numpy(U[:, :min_d] @ Sigma_power).float().to(device)
+    W1 = torch.zeros_like(hidden_dim, input_dim)
+    W1[:min_d, :] = torch.from_numpy(Sigma_power @ Vt[:min_d, :]).float().to(device) 
+    W2 = torch.zeros_like(output_dim, hidden_dim)
+    W2[:, :min_d] = torch.from_numpy(U[:, :min_d] @ Sigma_power).float().to(device)
     
     return W1, W2
 
