@@ -1,71 +1,55 @@
+# model.py
 import torch
 import torch.nn as nn
 import numpy as np
-from scipy.linalg import svd
 import torch.nn.functional as F
-from MNIST_data_utils import generate_target_matrix
+# from MNIST_data_utils import generate_target_matrix # Assuming data_utils.py is the source
 import wandb
 
-"""
-def balanced_init(input_dim, hidden_dim, output_dim, device):
-    # using SVD method
-    dims = [input_dim, hidden_dim, output_dim]
-    d0, dN = dims[0], dims[-1]
-    min_d = min(d0, dN)
-
-    # Step 1: 采样 A
-    A = np.random.randn(dN, d0)
-
-    # Step 2: SVD 分解
-    U, Sigma, Vt = svd(A, full_matrices=False)
-
-    Sigma_power = np.power(np.diag(Sigma[:min_d]), 1 / (len(dims) - 1))
-
-    # Step 4: 计算权重
-    W1 = torch.zeros_like(hidden_dim, input_dim)
-    W1[:min_d, :] = torch.from_numpy(Sigma_power @ Vt[:min_d, :]).float().to(device) 
-    W2 = torch.zeros_like(output_dim, hidden_dim)
-    W2[:, :min_d] = torch.from_numpy(U[:, :min_d] @ Sigma_power).float().to(device)
-    
-    return W1, W2
-"""
+# Removed balanced_init as it was commented out and not used.
 
 class LinearNetwork(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, device):
         super(LinearNetwork, self).__init__()
+        # Using nn.Linear handles default PyTorch initialization (Uniform) 
+        self.fc1 = nn.Linear(input_dim, hidden_dim).to(device)
+        self.act1 = nn.Tanh() # Tanh activation specified
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim).to(device)
+        self.act2 = nn.Tanh() # Tanh activation specified 
+        self.fc3 = nn.Linear(hidden_dim, output_dim).to(device)
 
-        self.W1 = nn.Parameter(torch.randn(hidden_dim, input_dim).float().to(device))
-        self.W2 = nn.Parameter(torch.randn(output_dim, hidden_dim).float().to(device))
-        nn.init.xavier_normal_(self.W1)
-        nn.init.xavier_normal_(self.W2)
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.act1(x)
+        x = self.fc2(x)
+        x = self.act2(x)
+        x = self.fc3(x)
+        return x # (batch_size, output_dim)
 
-
-    def forward(self, x = None):
-        x = torch.matmul(self.W1, x.T)
-        #x = F.relu(x)
-        x = torch.matmul(self.W2, x)
-        return x.T
-
-def test_model(model, X_test, Y_test, loss_fn, device):
-    model.eval()  # Set the model to evaluation mode
+# Modified test_model to use MSE loss and correct label types
+def test_model(model, X_test, Y_test_labels, Y_test_onehot, device):
+    model.eval()  
+    # Use MSELoss for testing as well, consistent with training setup 
+    loss_fn = nn.MSELoss()
     total_loss = 0
     correct_predictions = 0
     total_samples = 0
 
     with torch.no_grad():
         y_predict = model.forward(X_test)
-        _, predicted = torch.max(y_predict, 1)
-        predicted = predicted.to(device) 
-        loss = loss_fn(y_predict, Y_test)
-        total_loss += loss.item() * X_test.size(0)
+        # For MSE loss, the target is Y_test_onehot
+        loss = loss_fn(y_predict, Y_test_onehot)
+        total_loss += loss.item() * X_test.size(0) 
         total_samples += X_test.size(0)
 
-        
-        # Compare predictions with true labels
-        correct_predictions += (predicted == Y_test).sum().item()
+        _, predicted_indices = torch.max(y_predict, 1)
+        # Ensure comparison is done on the same device
+        predicted_indices = predicted_indices.to(device)
+        correct_predictions += (predicted_indices == Y_test_labels).sum().item()
 
     avg_loss = total_loss / total_samples
     accuracy = correct_predictions / total_samples
 
+    # Logging test loss and accuracy
     wandb.log({"test_loss": avg_loss, "test_accuracy": accuracy})
     print(f"Test Loss: {avg_loss:.4f}, Test Accuracy: {accuracy:.4f}")

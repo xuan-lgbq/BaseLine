@@ -3,14 +3,15 @@ import wandb
 from MNIST_config import config
 
 def plot_loss_curve(loss_history):
-    plt.figure(figsize=(10, 5))
-    plt.plot(range(len(loss_history)), loss_history, label="Training Loss", color="blue")
-    plt.xlabel("Step")
+    steps = sorted(loss_history.keys()) 
+    losses = [loss_history[step] for step in steps] 
+    plt.plot(steps, losses, label="Training Loss", color="blue")
+    plt.xlabel("Steps")
     plt.ylabel("Loss")
     plt.title("Training Loss Curve")
     plt.legend()
+    wandb.log({"Training Loss Curve": wandb.Image(plt)})
     plt.grid(True)
-    wandb.log({"loss_curve": wandb.Image(plt)})
     plt.show()
 
 def plot_hessian_eigenvalues(hessian_eigenvalues):
@@ -228,16 +229,16 @@ def plot_Hessain_invariant_cosine_similarity(cos_similarity_Hessian_invariant):
     else:
         print("No cosine similarities to plot.")
 
-def plot_invariant_matrix_norms(invariant_matrix):
+def plot_invariant_matrix_norms(invariant_matrix, title):
     plt.figure(figsize=(8, 5))
     steps_proj = sorted(invariant_matrix.keys())  # 按步骤排序
     norms_proj = [invariant_matrix[step] for step in steps_proj]
     plt.plot(steps_proj, norms_proj, marker='o', linestyle='-', color='green')
     plt.xlabel("Step")
     plt.ylabel("Invariant matrix norms")
-    plt.title("Invariant matrix Norm at Different Recorded Steps")
+    plt.title(f"Invariant matrix {title} Norm at Different Recorded Steps")
     plt.grid(True)
-    wandb.log({"Invariant matrix at Different Recorded Steps": wandb.Image(plt)})
+    wandb.log({f"Invariant matrix {title} Norm at Different Recorded Steps": wandb.Image(plt)})
     plt.show()
 
 def plot_train_accuracy(train_accuracy_history):
@@ -251,4 +252,19 @@ def plot_train_accuracy(train_accuracy_history):
     plt.ylabel('Accuracy')
     plt.grid(True)
     wandb.log({"Training Accuracy Over Steps": wandb.Image(plt)})
+    plt.show()
+
+def plot_top_2k_eigenvalues(eigenvalues):
+    steps = sorted(eigenvalues.keys())
+    plt.figure(figsize=(12, 6))
+    num_eigenvalues = len(eigenvalues[steps[0]]) if steps else 0
+    for i in range(num_eigenvalues):
+        eigenvalue_sequence = [eigenvalues[step][i] for step in steps]
+        plt.plot(steps, eigenvalue_sequence, linewidth=1, label=f'Eigenvalue {i+1}') # 增加线宽并添加标签
+    plt.title('The Largest 20 Eigenvalues Over Steps')
+    plt.xlabel('Step')
+    plt.ylabel('Eigenvalue')
+    plt.grid(True)
+    plt.legend() # 显示图例
+    wandb.log({"The Largest 20 Eigenvalues Over Steps": wandb.Image(plt)})
     plt.show()

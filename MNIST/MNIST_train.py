@@ -4,17 +4,15 @@ import torch.optim as optim
 import torch.nn as nn
 import numpy as np
 import wandb
-import plotting # 假设你的绘图函数在这个模块中
+import plotting 
 from itertools import cycle
 
-# --- 保持用户原有的 Import 结构 ---
 from MNIST_config import config, device
 from MNIST_model import LinearNetwork, test_model
 from MNIST_data_utils import load_mnist_data, _to_one_hot
 from MNIST_hessian_utils import compute_hessian_eigen_pyhessian, compute_dominant_projection
 from MNIST_check_dominant_space import Successive_Check_Dominant_Space, First_Last_Check_Dominant_Space
 
-# To use the package in the previous folder (保持用户原有结构)
 import sys
 import os
 
@@ -46,7 +44,6 @@ wandb.config.update(config)
 model = LinearNetwork(config["input_dim"], config["hidden_dim"], config["output_dim"], device).to(device)
 optimizer = optim.SGD(model.parameters(), lr=config["learning_rate"])
 
-# --- 训练过程变量初始化 (使用用户原始变量名) ---
 steps = config["steps"]
 record_steps = config["record_steps"]
 hessian_eigenvalues = {}
@@ -59,7 +56,7 @@ recorded_steps_invariant_marix_w1 = {}
 recorded_steps_invariant_marix_w2 = {}
 train_accuracy_history = {} # 基于 full dataset
 
-# --- 加载数据 (确保使用前 5000 训练数据) ---
+
 (train_loader, test_loader,
  X_train_full, Y_train_labels_full, Y_train_onehot_full,
  X_test_full, Y_test_labels_full, Y_test_onehot_full) = load_mnist_data(config, device)
@@ -84,13 +81,69 @@ for step in range(steps + 1):
     optimizer.zero_grad()
     y_predict_batch = model(batch_X)
     loss_batch = loss_fn(y_predict_batch, batch_Y_onehot)
-    # 不需要 create_graph=True，除非 Hessian 工具明确需要
+    current_loss = loss_batch.item()
+    loss_history[step] = current_loss 
+    wandb.log({"loss": current_loss}, step=step) 
+
+    if step % 5 == 0:
+        with torch.no_grad():
+            y_predict_full = model(X_train_full)
+            _, predicted_indices_full = torch.max(y_predict_full, 1)
+            accuracy_full = (predicted_indices_full == Y_train_labels_full).sum().item() / Y_train_labels_full.size(0)
+            train_accuracy_history[step] = accuracy_full
+            wandb.log({"train_accuracy": accuracy_full}, step=step)
+
+        # 计算 Full Batch Gradient 和相关指标
+        for p in model.parameters(): p.requires_grad_(True)
+        y_predict_full_for_grad = model(X_train_full)
+        loss_full_for_grad = loss_fn(y_predict_full_for_grad, Y_train_onehot_full)
+        grads_full = torch.autograd.grad(loss_full_for_grad, model.parameters(), create_graph=True, retain_graph=True)
+
+        grad_flat_full = torch.cat([g.view(-1) for g in grads_full if g is not None])
+        grad_norm_full = torch.norm(grad_flat_full).item()
+        gradient_norms[step] = grad_norm_full
+        wandb.log({f"gradient_norm_step_{step}": grad_norm_full}, step=step)
+
+        full_update_matrix = -config["learning_rate"] * grad_flat_full
+        full_update_norm = torch.norm(full_update_matrix).item()
+        update_matrix_norms[step] = full_update_norm # 使用原始变量名
+        wandb.log({f"update_matrix_norm_step_{step}": full_update_norm}, step=step)
+
+        # 计算 Hessian
+        eigenvalues, top_eigenvectors = compute_hessian_eigen_pyhessian(
+        model, loss_fn, X_train_full, Y_train_onehot_full,
+        top_k= 2 * config["top_k_pca_number"], device=device
+        )
+        hessian_eigenvalues[step] = eigenvalues
+        recorded_steps_top_eigenvectors[step] = top_eigenvectors[:config["top_k_pca_number"]]
+        wandb.log({f"hessian_eigenvalues_step_{step}": wandb.Histogram(eigenvalues)}, step=step)
+
+        # 计算投影
+        projection = compute_dominant_projection(top_eigenvectors, grad_flat_full.to(device), config["top_k_pca_number"])
+        dom_proj_norm = projection.norm().item()
+        dominant_projection[step] = dom_proj_norm
+        wandb.log({f"dominant_projection_norm_step_{step}": dom_proj_norm}, step=step)
+
+        # 不变子空间分析
+        with torch.no_grad():
+            W1, W2 = None, None
+            for name, param in model.named_parameters():
+                if 'fc1.weight' in name: W1 = param.clone().detach().cpu()
+                if 'fc3.weight' in name: W2 = param.clone().detach().cpu()
+
+            if W1 is not None and W2 is not None:
+                invariant_w1, invariant_w2 = compute_invariant_matrix(W1, W2)
+                inv_w1_norm = np.linalg.norm(invariant_w1)
+                inv_w2_norm = np.linalg.norm(invariant_w2)
+                recorded_steps_invariant_marix_w1[step] = inv_w1_norm
+                recorded_steps_invariant_marix_w2[step] = inv_w2_norm
+                wandb.log({"invariant_w1_norm": inv_w1_norm}, step=step)
+                wandb.log({"invariant_w2_norm": inv_w2_norm}, step=step)
+
     loss_batch.backward()
-
-    # 不在此处记录 minibatch 相关指标
-
     optimizer.step()
 
+    """"
     # --- 在 Record Step 时，执行 Full Batch 相关分析 (在 optimizer.step() 之后) ---
     if step in record_steps:
         model.eval() # 切换到评估模式
@@ -161,7 +214,7 @@ for step in range(steps + 1):
 
         # 切回训练模式
         model.train()
-
+    """
 # --- 训练结束后 ---
 test_model(model, X_test_full, Y_test_labels_full, Y_test_onehot_full, device)
 
@@ -173,21 +226,21 @@ first_last_cos_similarity = First_Last_Record_Steps_COS_Similarity(recorded_step
 successive_check_dominant_space = Successive_Check_Dominant_Space(recorded_steps_top_eigenvectors)
 first_last_check_dominant_space = First_Last_Check_Dominant_Space(recorded_steps_top_eigenvectors)
 
-# --- 调用绘图函数 (使用原始变量名) ---
-plotting.plot_loss_curve(loss_history) # 使用原始 loss_history (现在是 full batch loss)
+plotting.plot_loss_curve(loss_history) 
 plotting.plot_hessian_eigenvalues(hessian_eigenvalues)
 plotting.plot_cosine_similarity(successive_cos_similarity)
 plotting.plot_pca_spectrum(successive_pca_spectrum)
 plotting.plot_projection_norm(dominant_projection)
-plotting.plot_gradient_norms(gradient_norms) # 使用原始 gradient_norms (现在是 full batch)
-plotting.plot_update_matrix_norms(update_matrix_norms) # 使用原始 update_matrix_norms (现在是 full batch)
+plotting.plot_gradient_norms(gradient_norms) 
+plotting.plot_update_matrix_norms(update_matrix_norms)
 plotting.plot_cosine_similarity_to_last(first_last_cos_similarity)
 plotting.plot_pca_top_k_eigenvectors(first_last_pca_spectrum)
 plotting.plot_successive_check(successive_check_dominant_space)
 plotting.plot_first_last_check(first_last_check_dominant_space)
-plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w1, title="Invariant W1 Norm")
-plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w2, title="Invariant W2 Norm")
+plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w1, title="W1")
+plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w2, title="W2")
 plotting.plot_train_accuracy(train_accuracy_history)
 
+plotting.plot_top_2k_eigenvalues(hessian_eigenvalues)
 # --- 完成 wandb 运行 ---
 wandb.finish()
