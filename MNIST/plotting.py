@@ -268,3 +268,15 @@ def plot_top_2k_eigenvalues(eigenvalues):
     plt.legend() # 显示图例
     wandb.log({"The Largest 20 Eigenvalues Over Steps": wandb.Image(plt)})
     plt.show()
+
+def plot_X_loss(X_loss):
+    steps = sorted(X_loss.keys()) 
+    losses = [X_loss[step] for step in steps] 
+    plt.plot(steps, losses, label="X Loss", color="blue")
+    plt.xlabel("Steps")
+    plt.ylabel("Loss")
+    plt.title("X Loss Curve")
+    plt.legend()
+    wandb.log({"Training X Loss Curve": wandb.Image(plt)})
+    plt.grid(True)
+    plt.show()
