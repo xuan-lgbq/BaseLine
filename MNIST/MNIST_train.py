@@ -16,13 +16,13 @@ from MNIST_check_dominant_space import Successive_Check_Dominant_Space, First_La
 import sys
 import os
 
-# 获取 train.py 所在的目录 (e.g., /path/to/parent/MNIST)
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# 获取 MNIST 和 2 NN 共同的父目录 (e.g., /path/to/parent)
+
 parent_dir = os.path.dirname(current_dir)
 # 构建到 '2 NN' 文件夹的路径 (e.g., /path/to/parent/2 NN)
 nn_module_dir = os.path.join(parent_dir, '2 NN')
-# 将包含 PCA.py 等模块的 '2 NN' 目录添加到 sys.path
+
 if nn_module_dir not in sys.path: # 避免重复添加
     sys.path.append(nn_module_dir)
     
@@ -83,73 +83,10 @@ for step in range(steps + 1):
     y_predict_batch = model(batch_X)
     loss_batch = loss_fn(y_predict_batch, batch_Y_onehot)
 
-    """
-    # For GD 
-    current_loss = loss_batch.item()
-    loss_history[step] = current_loss 
-    wandb.log({"loss": current_loss}, step=step) 
-
-    if step % 5 == 0:
-        with torch.no_grad():
-            y_predict_full = model(X_train_full)
-            _, predicted_indices_full = torch.max(y_predict_full, 1)
-            accuracy_full = (predicted_indices_full == Y_train_labels_full).sum().item() / Y_train_labels_full.size(0)
-            train_accuracy_history[step] = accuracy_full
-            wandb.log({"train_accuracy": accuracy_full}, step=step)
-
-        # 计算 Full Batch Gradient 和相关指标
-        for p in model.parameters(): p.requires_grad_(True)
-        y_predict_full_for_grad = model(X_train_full)
-        loss_full_for_grad = loss_fn(y_predict_full_for_grad, Y_train_onehot_full)
-        grads_full = torch.autograd.grad(loss_full_for_grad, model.parameters(), create_graph=True, retain_graph=True)
-
-        grad_flat_full = torch.cat([g.view(-1) for g in grads_full if g is not None])
-        grad_norm_full = torch.norm(grad_flat_full).item()
-        gradient_norms[step] = grad_norm_full
-        wandb.log({f"gradient_norm_step_{step}": grad_norm_full}, step=step)
-
-        full_update_matrix = -config["learning_rate"] * grad_flat_full
-        full_update_norm = torch.norm(full_update_matrix).item()
-        update_matrix_norms[step] = full_update_norm # 使用原始变量名
-        wandb.log({f"update_matrix_norm_step_{step}": full_update_norm}, step=step)
-
-        # 计算 Hessian
-        eigenvalues, top_eigenvectors = compute_hessian_eigen_pyhessian(
-        model, loss_fn, X_train_full, Y_train_onehot_full,
-        top_k= 2 * config["top_k_pca_number"], device=device
-        )
-        hessian_eigenvalues[step] = eigenvalues
-        recorded_steps_top_eigenvectors[step] = top_eigenvectors[:,:config["top_k_pca_number"]]
-        wandb.log({f"hessian_eigenvalues_step_{step}": wandb.Histogram(eigenvalues)}, step=step)
-
-        # 计算投影
-        projection = compute_dominant_projection(top_eigenvectors, grad_flat_full.to(device), config["top_k_pca_number"])
-        dom_proj_norm = projection.norm().item()
-        dominant_projection[step] = dom_proj_norm
-        wandb.log({f"dominant_projection_norm_step_{step}": dom_proj_norm}, step=step)
-
-        # 不变子空间分析
-        with torch.no_grad():
-            W1, W2 = None, None
-            for name, param in model.named_parameters():
-                if 'fc1.weight' in name: W1 = param.clone().detach().cpu()
-                if 'fc3.weight' in name: W2 = param.clone().detach().cpu()
-
-            if W1 is not None and W2 is not None:
-                invariant_w1, invariant_w2 = compute_invariant_matrix(W1, W2)
-                inv_w1_norm = np.linalg.norm(invariant_w1)
-                inv_w2_norm = np.linalg.norm(invariant_w2)
-                recorded_steps_invariant_marix_w1[step] = inv_w1_norm
-                recorded_steps_invariant_marix_w2[step] = inv_w2_norm
-                wandb.log({"invariant_w1_norm": inv_w1_norm}, step=step)
-                wandb.log({"invariant_w2_norm": inv_w2_norm}, step=step)
-    """
-
     loss_batch.backward()
     optimizer.step()
 
-    # --- 在 Record Step 时，执行 Full Batch 相关分析 (在 optimizer.step() 之后) ---
-    #if step in record_steps:
+
     # Obeserving more data points
     if step % 50 == 0:
         model.eval() # 切换到评估模式
@@ -159,29 +96,28 @@ for step in range(steps + 1):
             y_predict_full = model(X_train_full)
             loss_full = loss_fn(y_predict_full, Y_train_onehot_full)
             current_full_loss = loss_full.item()
-            loss_history[step] = current_full_loss # 使用原始变量名
-            wandb.log({"loss": current_full_loss}, step=step) # 使用原始 wandb key
+            loss_history[step] = current_full_loss 
+            wandb.log({"loss": current_full_loss}, step=step) 
 
             _, predicted_indices_full = torch.max(y_predict_full, 1)
             accuracy_full = (predicted_indices_full == Y_train_labels_full).sum().item() / Y_train_labels_full.size(0)
             train_accuracy_history[step] = accuracy_full
-            wandb.log({"train_accuracy": accuracy_full}, step=step) # 使用原始 wandb key
+            wandb.log({"train_accuracy": accuracy_full}, step=step) 
 
         # 计算 Full Batch Gradient 和相关指标
         for p in model.parameters(): p.requires_grad_(True)
         y_predict_full_for_grad = model(X_train_full)
         loss_full_for_grad = loss_fn(y_predict_full_for_grad, Y_train_onehot_full)
-        # 确保 retain_graph=True 如果 Hessian 计算需要
         grads_full = torch.autograd.grad(loss_full_for_grad, model.parameters(), create_graph=True, retain_graph=True)
 
         grad_flat_full = torch.cat([g.view(-1) for g in grads_full if g is not None])
         grad_norm_full = torch.norm(grad_flat_full).item()
-        gradient_norms[step] = grad_norm_full # 使用原始变量名
+        gradient_norms[step] = grad_norm_full 
         wandb.log({f"gradient_norm_step_{step}": grad_norm_full}, step=step)
 
         full_update_matrix = -config["learning_rate"] * grad_flat_full
         full_update_norm = torch.norm(full_update_matrix).item()
-        update_matrix_norms[step] = full_update_norm # 使用原始变量名
+        update_matrix_norms[step] = full_update_norm 
         wandb.log({f"update_matrix_norm_step_{step}": full_update_norm}, step=step)
 
         # 计算 Hessian
