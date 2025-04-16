@@ -38,24 +38,20 @@ def compute_hessian_eigen_pyhessian(model, criterion, inputs, targets, top_k, de
     return eigenvalues, eigenvectors.T
 
 def compute_dominant_projection(top_eigenvectors, prev_top, k):
-
     """
     根据特征向量构造并应用投影操作: (\sum_{i=1}^{k} u_i u_i^T) @ prev_top (使用 PyTorch 张量)
     Args:
-        top_eigenvectors: 形状为 (p, k) 的 numpy 张量，每列是特征向量
-        k: 使用的顶部特征向量的数量
-        prev_top: 形状为 (p,) 或 (p, m) 的 PyTorch 张量
+    top_eigenvectors: 形状为 (p, k) 的 PyTorch 张量，每列是特征向量
+    k: 使用的顶部特征向量的数量
+    prev_top: 形状为 (p,) 或 (p, m) 的 PyTorch 张量
     Returns:
-         projection: 形状与 prev_top 相同的 PyTorch 张量，计算结果
+    projection: 形状与 prev_top 相同的 PyTorch 张量，计算结果
     """
-
-    top_eigenvectors = torch.from_numpy(top_eigenvectors).float().to(device)
     p = top_eigenvectors.shape[0]
     projection = torch.zeros_like(prev_top, device=device)
 
     for i in range(k):
-        u_i = top_eigenvectors[:, i].unsqueeze(1)  
-         
+        u_i = top_eigenvectors[:, i].unsqueeze(1)
         projection += torch.matmul(u_i, torch.matmul(u_i.T, prev_top))
 
-    return  projection
+    return projection

@@ -2,15 +2,16 @@ import matplotlib.pyplot as plt
 import wandb
 from MNIST_config import config
 
-def plot_loss_curve(loss_history):
-    steps = sorted(loss_history.keys()) 
-    losses = [loss_history[step] for step in steps] 
-    plt.plot(steps, losses, label="Training Loss", color="blue")
+def plot_loss_curve(loss_history, title="Training Loss Curve"):
+    plt.figure(figsize=(12, 8))
+    steps = sorted(loss_history.keys())
+    losses = [loss_history[step] for step in steps]
+    plt.plot(steps, losses, label=title, color="blue")
     plt.xlabel("Steps")
     plt.ylabel("Loss")
-    plt.title("Training Loss Curve")
+    plt.title(title)
     plt.legend()
-    wandb.log({"Training Loss Curve": wandb.Image(plt)})
+    wandb.log({title: wandb.Image(plt)})  # 使用图表的标题作为键名
     plt.grid(True)
     plt.show()
 
@@ -270,6 +271,7 @@ def plot_top_2k_eigenvalues(eigenvalues):
     plt.show()
 
 def plot_X_loss(X_loss):
+    plt.figure(figsize=(8, 5))
     steps = sorted(X_loss.keys()) 
     losses = [X_loss[step] for step in steps] 
     plt.plot(steps, losses, label="X Loss", color="blue")
@@ -279,4 +281,51 @@ def plot_X_loss(X_loss):
     plt.legend()
     wandb.log({"Training X Loss Curve": wandb.Image(plt)})
     plt.grid(True)
+    plt.show()
+
+def plot_comparison_loss_with_phases(loss_history, convergence_step):
+    """
+    绘制训练过程中不同阶段的损失曲线。
+
+    Args:
+        loss_history (dict): 包含 'SGD', 'Dominant', 'Bulk' 键的字典，
+                             每个键对应的值是一个记录了损失历史的字典。
+        convergence_step (int): 初始 SGD 收敛的步数。
+    """
+    plt.figure(figsize=(10, 6))
+
+    # 绘制 convergence 之前的 SGD loss
+    sgd_steps_before = sorted([step for step in loss_history['SGD'].keys() if step <= convergence_step and convergence_step != -1])
+    sgd_losses_before = [loss_history['SGD'][step] for step in sgd_steps_before]
+    if sgd_steps_before:
+        plt.plot(sgd_steps_before, sgd_losses_before, label="SGD (Initial)", color="blue")
+
+    # 绘制 convergence 之后的 loss
+    if convergence_step != -1:
+        sgd_steps_after = sorted([step for step in loss_history['SGD'].keys() if step >= convergence_step])
+        sgd_losses_after = [loss_history['SGD'][step] for step in sgd_steps_after]
+        if sgd_steps_after:
+            plt.plot(sgd_steps_after, sgd_losses_after, label="SGD (Continued)", color="green")
+
+        dominant_steps = sorted([step for step in loss_history['Dominant'].keys() if step >= convergence_step])
+        dominant_losses = [loss_history['Dominant'][step] for step in dominant_steps]
+        if dominant_steps:
+            plt.plot(dominant_steps, dominant_losses, label="Dominant", color="red")
+
+        bulk_steps = sorted([step for step in loss_history['Bulk'].keys() if step >= convergence_step])
+        bulk_losses = [loss_history['Bulk'][step] for step in bulk_steps]
+        if bulk_steps:
+            plt.plot(bulk_steps, bulk_losses, label="Bulk", color="purple")
+    elif convergence_step == -1:
+        # 如果没有收敛，只绘制 SGD 的 loss
+        sgd_steps = sorted(loss_history['SGD'].keys())
+        sgd_losses = [loss_history['SGD'][step] for step in sgd_steps]
+        plt.plot(sgd_steps, sgd_losses, label="SGD", color="blue")
+
+    plt.xlabel("Steps")
+    plt.ylabel("Loss")
+    plt.title("Loss Comparison Across Training Phases")
+    plt.legend()
+    plt.grid(True)
+    wandb.log({"Loss Comparison": wandb.Image(plt)})  # 修改了键名
     plt.show()

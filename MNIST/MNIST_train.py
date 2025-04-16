@@ -190,7 +190,7 @@ for step in range(steps + 1):
         top_k= 2 * config["top_k_pca_number"], device=device
         )
         eigenvalues = eigenvalues_and_eigenvectors[0]
-        top_eigenvectors = eigenvalues_and_eigenvectors[1][:, :config["top_k_pca_number"]] # 取前 top_k_pca_number 个特征向量
+        top_eigenvectors = torch.from_numpy(eigenvalues_and_eigenvectors[1][:, :config["top_k_pca_number"]]).float().to(device) # 取前 top_k_pca_number 个特征向量
 
         hessian_eigenvalues[step] = eigenvalues
         recorded_steps_top_eigenvectors[step] = top_eigenvectors
@@ -201,7 +201,6 @@ for step in range(steps + 1):
         dom_proj_norm = projection.norm().item()
         dominant_projection[step] = dom_proj_norm
         wandb.log({f"dominant_projection_norm_step_{step}": dom_proj_norm}, step=step)
-
         X_gradient_loss[step] = dom_proj_norm/grad_norm_full
         # 不变子空间分析
         with torch.no_grad():
@@ -241,7 +240,7 @@ plotting.plot_hessian_eigenvalues(hessian_eigenvalues)
 
 """
 plotting.plot_cosine_similarity(successive_cos_similarity)
-""""
+"""
 
 plotting.plot_pca_spectrum(successive_pca_spectrum)
 
