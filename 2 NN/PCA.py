@@ -8,10 +8,10 @@ def Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors):
 
     for i in range(num_steps):
         current_step = sorted_steps[i]
-        current_space = recorded_steps_top_eigenvectors[current_step]
+        current_space = recorded_steps_top_eigenvectors[current_step][:, :100]
         if i > 0:
             previous_step = sorted_steps[i - 1]
-            previous_space = recorded_steps_top_eigenvectors[previous_step]
+            previous_space = recorded_steps_top_eigenvectors[previous_step][:, :100]
             
             # combined_vectors = np.concatenate((np.real(current), np.real(previous)), axis=1)
             # eigenvalues = np.linalg.eigvalsh(matrix)
@@ -19,9 +19,9 @@ def Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors):
             matrix = np.matmul(current_space.T, previous_space)
             _, sigma, _ = np.linalg.svd(matrix)
             
-            sorted_eigenvalues = np.sort(sigma)[::-1]
-            Successive_Record_Steps_PCA_Spectrum[current_step] = sorted_eigenvalues
-            wandb.log({f"successive_pca_spectrum_step_{current_step}": wandb.Histogram(sorted_eigenvalues)}, step=current_step)
+            sorted_eigenvalues = np.sort(sigma)[::-1][:40]
+            Successive_Record_Steps_PCA_Spectrum[current_step] = sorted_eigenvalues[:40]
+            # wandb.log({f"successive_pca_spectrum_step_{current_step}": wandb.Histogram(sorted_eigenvalues[:40], )}, step=current_step)
 
     return Successive_Record_Steps_PCA_Spectrum
 
@@ -46,6 +46,6 @@ def First_Last_Record_Steps_PCA(recorded_steps_top_eigenvectors):
         _, sigma, _ = np.linalg.svd(matrix)
         sorted_eigenvalues = np.sort(sigma)[::-1]
         First_Last_Record_Steps_PCA_Spectrum[current_step] = sorted_eigenvalues
-        wandb.log({f"first_last_pca_spectrum_step_{current_step}": wandb.Histogram(sorted_eigenvalues)}, step=current_step)
+        # wandb.log({f"first_last_pca_spectrum_step_{current_step}": wandb.Histogram(sorted_eigenvalues)}, step=current_step)
 
     return First_Last_Record_Steps_PCA_Spectrum

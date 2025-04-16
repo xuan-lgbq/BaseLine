@@ -4,7 +4,7 @@ from config import device
 from pyhessian import hessian
 
 # 计算 Hessian 矩阵的特征值和特征向量
-def compute_hessian_eigen(loss, params, top_k = 75):  # previously top_k = 5
+def compute_hessian_eigen(loss, params, top_k = 832):  # previously top_k = 5
     params = list(params)
     
     # 获取所有参数的展平梯度

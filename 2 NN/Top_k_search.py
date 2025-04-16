@@ -1,8 +1,8 @@
 import numpy as np
 from functools import wraps
 # Binary Search for initial k_0
-def Binary_Search(previous, current, k_0):
-    tau = 0.95
+def Binary_Search(previous, current, tau, k_0):
+    # tau = 0.95
     # Lower and upper bounds for k
     left, right = 0, k_0 - 1
     
@@ -24,7 +24,7 @@ def Binary_Search(previous, current, k_0):
 # Define a decorator
 def optimize_k0(func):
     @wraps(func)
-    def wrapper(recorded_steps_top_eigenvectors, k_0=None):
+    def wrapper(recorded_steps_top_eigenvectors, tau=0.98, k_0=None):
         sorted_steps = sorted(recorded_steps_top_eigenvectors.keys())
             
         if len(sorted_steps) < 2:
@@ -37,25 +37,25 @@ def optimize_k0(func):
             k_0 = epoch_0.shape[1]  # 先给 k_0 赋值
         
             # 计算初始 k_0
-            optimized_k0 = Binary_Search(epoch_0, epoch_1, k_0)
+            optimized_k0 = Binary_Search(epoch_0, epoch_1, tau, k_0)
         else:
             optimized_k0 = k_0  # 直接使用提供的 k_0
             
         # 调用被装饰的 Top_Down 方法，并传入优化后的 k_0
-        return func(recorded_steps_top_eigenvectors, optimized_k0, sorted_steps)
+        return func(recorded_steps_top_eigenvectors, tau, optimized_k0, sorted_steps)
     
     return wrapper
 
 # Use the decorator
 @optimize_k0
 
-def Top_Down(recorded_steps_top_eigenvectors, k_0=None, sorted_steps=None):
+def Top_Down(recorded_steps_top_eigenvectors, tau=0.98, k_0=None, sorted_steps=None):
     if sorted_steps is None:  
         sorted_steps = sorted(recorded_steps_top_eigenvectors.keys())
         
     num_steps = len(sorted_steps) 
-    tau = 0.95 # Tolerance 
-    k = k_0  # Initialize k
+    # tau = 0.95 # Tolerance 
+    k = int(k_0)  # Initialize k
     trajectory = {}
     trajectory[0] = k_0
     trajectory[1] = k_0 
@@ -66,9 +66,13 @@ def Top_Down(recorded_steps_top_eigenvectors, k_0=None, sorted_steps=None):
         
         previous_step = sorted_steps[i - 1]
         previous = recorded_steps_top_eigenvectors[previous_step][:,:k]  # Previous top k eigenvectors
-            
+        
+        if trajectory[i-1] == 0:
+            trajectory[i] = 0
+            continue
+        
         for d in range(trajectory[i-1]):
-                
+            trajectory[i] = 0
             current_subspace = current[:, :trajectory[i-1]-d]  # Current subspace, top k-d eigenvectors
             previous_subspace = previous[:, :trajectory[i-1]-d]  # Previous subspace, top k-d eigenvectors
                 
@@ -84,11 +88,9 @@ def Top_Down(recorded_steps_top_eigenvectors, k_0=None, sorted_steps=None):
             # If the minimal singular value is less then tau, then we reduce the dimensionality by d (one reduces dimension from top k to top k-d)
                 
             # If the minimal singular value is greater than tau, which means the two subspaces are aligned, then we stop the loop and return the current k.
-            if min_sigma > tau:
+            if min_sigma >= tau:
                 trajectory[i] = trajectory[i-1] - d
                 break
-                
-            
             
     return trajectory
 
