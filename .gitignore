@@ -180,3 +180,8 @@ wandb/
 
 # Ignore VSCode settings
 .vscode/
+
+# Ignore Test Code
+/2 NN/Test_code/
+/MNIST/Test_code
+/2 NN/records/
