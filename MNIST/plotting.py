@@ -329,3 +329,29 @@ def plot_comparison_loss_with_phases(loss_history, convergence_step):
     plt.grid(True)
     wandb.log({"Loss Comparison": wandb.Image(plt)})  # 修改了键名
     plt.show()
+    
+def plot_top_k_trajectory(trajectory, tau):
+    plt.figure(figsize=(16, 6))  # 设置画布尺寸（示例：12x6英寸）
+    length = len(trajectory)
+    x = np.arange(length)  # 生成横轴 0, 1, 2, ..., steps-1
+    trajectory_list = list(trajectory.values())
+    plt.plot(x, trajectory_list, marker='o', linestyle='-', linewidth=2, markersize=6)  # 画折线图
+    # 添加图表标注
+    plt.title("Top-k Trajectory with Tolerance {}".format(tau), fontsize=14)
+    plt.xlabel("Step", fontsize=12)
+    plt.ylabel("Top-k", fontsize=12)
+    plt.grid(True, linestyle='--', alpha=0.6)  # 显示网格线
+    """
+    # 设置自定义的y轴刻度
+    # 前半部分刻度：以10为单位增长
+    y_ticks_first = np.arange(0, 100, 10)
+    # 后半部分刻度：以400为单位增长
+    y_ticks_second = np.arange(100, 450, 50)
+    # 合并前后部分的刻度
+    y_ticks = np.concatenate((y_ticks_first, y_ticks_second))
+    plt.yticks(y_ticks)  # 设置y轴刻度
+    """
+    wandb.log({"Top k Trajectory at Recorded Steps with Tolerance {}".format(tau): wandb.Image(plt)})
+    plt.tight_layout()  # 自动调整子图间距
+    plt.savefig("/home/ouyangzl/BaseLine/2 NN/images/Top k Trajectory at Recorded Steps with Tolerance {}.png".format(tau))
+    plt.show()
