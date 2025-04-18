@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import wandb
 from MNIST_config import config
-
+import numpy as np
 def plot_loss_curve(loss_history, title="Training Loss Curve"):
     plt.figure(figsize=(12, 8))
     steps = sorted(loss_history.keys())
