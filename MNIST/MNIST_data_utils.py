@@ -7,7 +7,7 @@ from MNIST_config import config, device
 def load_mnist_data(config, device):
     """加载MNIST数据集,返回DataLoader和完整数据集张量"""
     # ... (transform_pipeline 和 dataset loading 不变) ...
-    data_root = "/jumbo/yaoqingyang/boyao/MNIST"
+    data_root = "/home/ouyangzl/BaseLine/MNIST/data"
 
     transform_pipeline = transforms.Compose([
         transforms.ToTensor(),

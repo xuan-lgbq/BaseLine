@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import wandb
 from MNIST_config import config
 import numpy as np
+import itertools
 def plot_loss_curve(loss_history, title="Training Loss Curve"):
     plt.figure(figsize=(12, 8))
     steps = sorted(loss_history.keys())
@@ -355,3 +356,170 @@ def plot_top_k_trajectory(trajectory, tau):
     plt.tight_layout()  # 自动调整子图间距
     plt.savefig("/home/ouyangzl/BaseLine/2 NN/images/Top k Trajectory at Recorded Steps with Tolerance {}.png".format(tau))
     plt.show()
+    
+def plot_single_cosine_similarity(history, interval=50, label=None, save_path='./images'):
+    colors = {'batch gradient': 'red', 'full gradient': 'blue', 'gradient difference': 'green'}
+    markers = {'batch gradient': 'o', 'full gradient': 's', 'gradient difference': 'v'}
+    
+    if not history:
+        print(f"No data for {label}")
+        return
+    
+    # Check data structure
+    """
+    if not all(isinstance(i, tuple) and len(i) == 2 for i in history):
+        print(f"Invalid format in history for {label}")
+        return
+    """
+    
+    
+    # 提取所有的 steps 和 similarities
+    # 将 dict 转换为 list，并按照 step 排序（保险起见）
+    steps = sorted(history.keys())
+    similarities = [history[step] for step in steps]
+    
+    
+    # 筛选出符合 interval 间隔的 steps 和 similarities
+    filtered_steps = [step for step in steps if step % interval == 0]
+    filtered_similarities = [history[step] for step in filtered_steps]
+    
+    # Create figure
+    plt.figure(figsize=(10, 6))
+    
+    # 绘制余弦相似度曲线
+    plt.plot(filtered_steps, filtered_similarities,
+             marker=markers.get(label, 'o'),
+             linestyle='-',
+             color=colors.get(label, 'black'),
+             label=label)
+    
+    # 添加标签和标题
+    plt.xlabel("Step")
+    plt.ylabel("Cosine Similarity")
+    plt.title(f"Cosine similarity between {label} and Hessian's top eigenvector")
+    plt.grid(True)
+    plt.legend()
+    
+    # 上传图像到 wandb
+    wandb.log({f"Cosine similarity between {label} and Hessian's top eigenvector": wandb.Image(plt)})
+    
+    # 保存图像到指定路径
+    plt.savefig(save_path)
+    print(f"Plot saved to {save_path}")
+    
+    # 显示图像
+    plt.show()
+
+def plot_cosine_similarity_all(histories, interval=50, save_path='./images'):
+    colors = itertools.cycle(['red', 'blue', 'green', 'orange'])
+    markers = itertools.cycle(['o', 's', 'v', '^'])
+    
+    plt.figure(figsize=(10, 6))
+    
+    for label, history in histories.items():
+        if not history:
+            print(f"No data for {label}")
+            continue
+
+        steps = sorted(history.keys())
+        similarities = [history[step] for step in steps]
+
+        filtered_steps = [step for step in steps if step % interval == 0]
+        filtered_similarities = [history[step] for step in filtered_steps]
+
+        color = next(colors)
+        marker = next(markers)
+
+        plt.plot(filtered_steps, filtered_similarities,
+                 marker=marker, linestyle='-', color=color, label=label)
+
+    plt.xlabel("Step")
+    plt.ylabel("Cosine Similarity")
+    plt.title("Cosine Similarity vs. Top Hessian Eigenvector")
+    plt.grid(True)
+    plt.legend()
+
+    # wandb 上传
+    wandb.log({"Cosine similarity (all) vs. Top Hessian Eigenvector": wandb.Image(plt)})
+
+    plt.savefig(save_path)
+    print(f"Saved combined plot to {save_path}")
+    plt.show()
+    
+def plot_single_projection_history(history, interval=50, label=None, save_path=None):
+    colors = {'batch gradient': 'red', 'full gradient': 'blue', 'gradient difference': 'green'}
+    markers = {'batch gradient': 'o', 'full gradient': 's', 'gradient difference': 'v'}
+    
+    if not history: # 如果没有数据，打印提示信息并返回
+        print(f'No data for {label}')
+        return
+    
+    steps = sorted(history.keys())
+    projection = [history[step] for step in steps]
+    
+    filtered_steps = [step for step in steps if step % interval == 0]
+    filtered_projection = [history[step] for step in filtered_steps]
+    
+    # Create figure
+    plt.figure(figsize=(10, 6))
+
+    # 绘制投影曲线
+    plt.plot(filtered_steps, filtered_projection,
+             marker=markers.get(label, 'o'),
+             linestyle='-',
+             color=colors.get(label, 'black'),
+             label=label)
+
+    # 添加标签和标题
+    plt.xlabel("Step")
+    plt.ylabel("Projection")
+    plt.title(f"Projection of {label} onto Hessian's top 10 eigenvectors")
+    plt.grid(True)
+    plt.legend()
+    
+    # 上传图像到 wandb
+    wandb.log({f"Projection of {label} onto Hessian's top 10 eigenvectors": wandb.Image(plt)})
+    
+    # 保存图像到指定路径
+    plt.savefig(save_path)
+    print(f"Plot saved to {save_path}")
+    
+    # 显示图像
+    plt.show()
+
+def plot_projection_history_all(histories, interval=50, save_path=None):
+    colors = itertools.cycle(['red', 'blue', 'green', 'orange'])
+    markers = itertools.cycle(['o', 's', 'v', '^'])
+    
+    plt.figure(figsize=(10, 6))
+    
+    for label, history in histories.items():
+        if not history:
+            print(f"No data for {label}")
+            continue
+
+        steps = sorted(history.keys())
+        projection = [history[step] for step in steps]
+        
+        filtered_steps = [step for step in steps if step % interval == 0]
+        filtered_projection = [history[step] for step in filtered_steps]
+        
+        color = next(colors)
+        marker = next(markers)
+
+        plt.plot(filtered_steps, filtered_projection,
+                 marker=marker, linestyle='-', color=color, label=label)
+
+    plt.xlabel("Step")
+    plt.ylabel("Projection")
+    plt.title("Projection onto Hessian's top 10 eigenvectors")
+    plt.grid(True)
+    plt.legend()
+    
+    # wandb 上传
+    wandb.log({"Projection onto Hessian's top 10 eigenvectors": wandb.Image(plt)})
+
+    plt.savefig(save_path)
+    print(f"Saved combined plot to {save_path}")
+    plt.show()
+    

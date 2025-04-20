@@ -37,6 +37,7 @@ if device.type == 'cuda':
     torch.cuda.manual_seed_all(config["torch_seed"])
 
 # --- 初始化 wandb ---
+wandb.login(key="19f26ee33b3dd19e282387aa75e310e4b07df17a")   # Key API
 wandb.init(project=config["wandb_project_name"], name=config["wandb_run_name"])
 wandb.config.update(config)
 
