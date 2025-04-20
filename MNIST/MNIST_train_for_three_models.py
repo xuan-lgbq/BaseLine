@@ -1,4 +1,3 @@
-# train.py
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -85,14 +84,14 @@ for step in range(steps + 1):
     y_predict_batch = model_sgd(batch_X)
     loss_batch = loss_fn(y_predict_batch, batch_Y_onehot)
     current_loss = loss_batch.item()
-    loss_history['SGD'][step] = current_loss
+    loss_history['SGD'][step] = np.log(current_loss)
     wandb.log({"loss_SGD": current_loss}, step=step)
 
     loss_batch.backward()
     optimizer_sgd.step()
     
     #if not converged and abs(last_loss - current_loss) <= 9e-7 and step > 0:
-    if step > 15000 :
+    if step > 500 :
         converged = True
         convergence_step = step
         print(f"SGD converged at step {step}, loss: {current_loss:.6f}")
@@ -124,7 +123,7 @@ if converged and convergence_step != -1:
         optimizer_sgd.zero_grad()
         y_predict_sgd = model_sgd(batch_X)
         loss_sgd = loss_fn(y_predict_sgd, batch_Y_onehot)
-        loss_history['SGD'][step] = loss_sgd.item()
+        loss_history['SGD'][step] = np.log(loss_sgd.item())
         wandb.log({"loss_SGD": loss_sgd.item()}, step=step)
         loss_sgd.backward() 
         optimizer_sgd.step()
@@ -133,7 +132,7 @@ if converged and convergence_step != -1:
         optimizer_dominant.zero_grad()
         y_predict_dominant = model_dominant(batch_X)
         loss_dominant = loss_fn(y_predict_dominant, batch_Y_onehot)
-        loss_history['Dominant'][step] = loss_dominant.item()
+        loss_history['Dominant'][step] = np.log(loss_dominant.item())
         wandb.log({"loss_Dominant": loss_dominant.item()}, step=step)
         loss_dominant.backward(create_graph=True) # 计算 model_dominant 的梯度
         grads_full_dominant = torch.cat([param.grad.to(device).view(-1) for param in model_dominant.parameters() if param.grad is not None])
@@ -145,12 +144,12 @@ if converged and convergence_step != -1:
         top_eigenvectors_dominant = torch.from_numpy(eigenvalues_and_eigenvectors_dominant[1]).float().to(device)
 
         dominant_train(model_dominant, grads_full_dominant.to(device), top_eigenvectors_dominant, config["top_k_pca_number"], optimizer_dominant, loss_dominant, device)
-        """
+       
         # --- Bulk Train (使用 model_bulk 自身的梯度和 Hessian 特征向量) ---
         optimizer_bulk.zero_grad()
         y_predict_bulk = model_bulk(batch_X)
         loss_bulk = loss_fn(y_predict_bulk, batch_Y_onehot)
-        loss_history['Bulk'][step] = loss_bulk.item()
+        loss_history['Bulk'][step] = np.log(loss_bulk.item())
         wandb.log({"loss_Bulk": loss_bulk.item()}, step=step)
         loss_bulk.backward(create_graph=True) # 计算 model_bulk 的梯度
         grads_full_bulk = torch.cat([param.grad.to(device).view(-1) for param in model_bulk.parameters() if param.grad is not None])
@@ -162,7 +161,7 @@ if converged and convergence_step != -1:
         top_eigenvectors_bulk = torch.from_numpy(eigenvalues_and_eigenvectors_bulk[1]).float().to(device)
 
         Bulk_train(model_bulk, grads_full_bulk.to(device), top_eigenvectors_bulk, config["top_k_pca_number"], optimizer_bulk, loss_bulk, device)
-        """
+        
 # --- 训练结束后 ---
 test_model(model_sgd, X_test_full, Y_test_labels_full, Y_test_onehot_full, device)
 if model_dominant is not None:

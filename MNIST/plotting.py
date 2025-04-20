@@ -329,3 +329,14 @@ def plot_comparison_loss_with_phases(loss_history, convergence_step):
     plt.grid(True)
     wandb.log({"Loss Comparison": wandb.Image(plt)})  # 修改了键名
     plt.show()
+
+def plot_curvature(curvature):
+    plt.figure(figsize=(8, 5))
+    steps = [i * 50 for i in range(len(curvature))]
+    plt.plot(steps, curvature, label="Curvature", color="blue")
+    plt.xlabel("Steps")
+    plt.ylabel("Curvature")
+    plt.title("Curvature Curve during training") 
+    plt.grid(True)
+    wandb.log({"Curvature Curve during training": wandb.Image(plt)})
+    plt.show()

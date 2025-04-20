@@ -2,15 +2,16 @@ import numpy as np
 import wandb
 from sklearn.preprocessing import normalize 
 import copy
+import torch
 
 def normalize_eigenvectors_by_row(recorded_steps_top_eigenvectors):
     """
     Normalize each eigenvector (row) within each matrix in the input dictionary.
 
     Args:
-        recorded_steps_top_eigenvectors (dict): A dictionary where keys are steps 
-                                                and values are matrices (e.g., NumPy arrays)
-                                                of shape (N, D), where N is the number 
+        recorded_steps_top_eigenvectors (dict): A dictionary where keys are steps
+                                                and values are matrices (NumPy arrays or PyTorch tensors)
+                                                of shape (N, D), where N is the number
                                                 of top eigenvectors and D is the dimension.
                                                 Each row represents an eigenvector.
 
@@ -19,18 +20,19 @@ def normalize_eigenvectors_by_row(recorded_steps_top_eigenvectors):
               containing the row-normalized eigenvectors (L2 norm by default).
     """
     normalized_dict = {}
-    
-    for step, eigenvector_matrix in recorded_steps_top_eigenvectors.items():
-        # Ensure the input is array-like (e.g., numpy array or can be converted)
-        # Using copy() can prevent modification of the original data if it's mutable
-        # although normalize usually returns a new array. Being explicit can be safer.
-        # Convert to numpy array just in case it's not, copy to be safe
-        matrix_to_normalize = np.array(eigenvector_matrix, copy=True) 
 
-        normalized_matrix = normalize(matrix_to_normalize, axis=0, norm='l2')
-        
-        normalized_dict[step] = normalized_matrix
-        
+    for step, eigenvector_matrix in recorded_steps_top_eigenvectors.items():
+        if isinstance(eigenvector_matrix, torch.Tensor):
+            # Normalize PyTorch tensor row-wise
+            row_norms = torch.norm(eigenvector_matrix, p=2, dim=1, keepdim=True)
+            normalized_matrix = eigenvector_matrix / row_norms
+            normalized_dict[step] = normalized_matrix
+        elif isinstance(eigenvector_matrix, np.ndarray):
+            # Keep the original NumPy array normalization
+            matrix_to_normalize = np.array(eigenvector_matrix, copy=True)
+            normalized_matrix = normalize(matrix_to_normalize, axis=1, norm='l2') # Corrected axis to 1 for row-wise normalization
+            normalized_dict[step] = normalized_matrix
+
     return normalized_dict
 
 def Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors):
@@ -46,13 +48,10 @@ def Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors):
             previous_step = sorted_steps[i - 1]
             previous_space = recorded_steps_top_eigenvectors[previous_step]
             
-            # combined_vectors = np.concatenate((np.real(current), np.real(previous)), axis=1)
-            # eigenvalues = np.linalg.eigvalsh(matrix)
+            matrix = torch.matmul(current_space.T, previous_space)
+            _, sigma, _ = torch.linalg.svd(matrix)
             
-            matrix = np.matmul(current_space.T, previous_space)
-            _, sigma, _ = np.linalg.svd(matrix)
-            
-            sorted_eigenvalues = np.sort(sigma)[::-1]
+            sorted_eigenvalues = torch.sort(sigma)[::-1]
             Successive_Record_Steps_PCA_Spectrum[current_step] = sorted_eigenvalues
             wandb.log({f"successive_pca_spectrum_step_{current_step}": wandb.Histogram(sorted_eigenvalues)}, step=current_step)
 
@@ -72,13 +71,10 @@ def First_Last_Record_Steps_PCA(recorded_steps_top_eigenvectors):
     for i in range(num_steps - 1):
         current_step = sorted_steps[i]
         current = recorded_steps_top_eigenvectors[current_step]
-        # combined_vectors = np.concatenate((np.real(current), np.real(Last_top_eigenvectors)), axis=1)
-        # matrix = np.matmul(combined_vectors.T, combined_vectors)
-        # eigenvalues = np.linalg.eigvalsh(matrix)
-        
-        matrix = np.matmul(current.T, Last_top_eigenvectors)
-        _, sigma, _ = np.linalg.svd(matrix)
-        sorted_eigenvalues = np.sort(sigma)[::-1]
+      
+        matrix = torch.matmul(current.T, Last_top_eigenvectors)
+        _, sigma, _ = torch.linalg.svd(matrix)
+        sorted_eigenvalues = torch.sort(sigma)[::-1]
         First_Last_Record_Steps_PCA_Spectrum[current_step] = sorted_eigenvalues
         wandb.log({f"first_last_pca_spectrum_step_{current_step}": wandb.Histogram(sorted_eigenvalues)}, step=current_step)
 

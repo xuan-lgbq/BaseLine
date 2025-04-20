@@ -37,5 +37,5 @@ config = {
     "top_k_pca_number": 10, 
     "wandb_project_name": "MNIST",
     # Updated run name to reflect setup
-    "wandb_run_name": "3 NN MLP+Tanh+SGD+MSE+MNIST-5k(tiny space set up)(Three models)"
+    "wandb_run_name": "3 NN MLP+Tanh+SGD+MSE+MNIST-5k(tiny space set up)(Curvature for every 50 points)"
 }

@@ -12,6 +12,7 @@ from MNIST_model import LinearNetwork, test_model
 from MNIST_data_utils import load_mnist_data, _to_one_hot
 from MNIST_hessian_utils import compute_hessian_eigen_pyhessian, compute_dominant_projection
 from MNIST_check_dominant_space import Successive_Check_Dominant_Space, First_Last_Check_Dominant_Space
+from Curvature import curvature_projection_trajectory
 
 import sys
 import os
@@ -55,6 +56,7 @@ recorded_steps_top_eigenvectors = {}
 recorded_steps_invariant_marix_w1 = {}
 recorded_steps_invariant_marix_w2 = {}
 train_accuracy_history = {} # 基于 full dataset
+curvature = []
 
 X_gradient_loss = {}
 
@@ -121,11 +123,14 @@ for step in range(steps + 1):
         wandb.log({f"update_matrix_norm_step_{step}": full_update_norm}, step=step)
 
         # 计算 Hessian
+        # For 2 * top_k eigenvalues
         eigenvalues_and_eigenvectors = compute_hessian_eigen_pyhessian(
         model, loss_fn, X_train_full, Y_train_onehot_full,
         top_k= 2 * config["top_k_pca_number"], device=device
         )
-        eigenvalues = eigenvalues_and_eigenvectors[0]
+        # For 2 * top_k eigenvalues
+        #eigenvalues = eigenvalues_and_eigenvectors[0]
+        eigenvalues = torch.from_numpy(eigenvalues_and_eigenvectors[0][:, :config["top_k_pca_number"]]).float().to(device) # 取前 top_k_pca_number 个特征向量
         top_eigenvectors = torch.from_numpy(eigenvalues_and_eigenvectors[1][:, :config["top_k_pca_number"]]).float().to(device) # 取前 top_k_pca_number 个特征向量
 
         hessian_eigenvalues[step] = eigenvalues
@@ -163,6 +168,8 @@ for step in range(steps + 1):
 # --- 训练结束后 ---
 test_model(model, X_test_full, Y_test_labels_full, Y_test_onehot_full, device)
 
+curvature =  curvature_projection_trajectory(recorded_steps_top_eigenvectors, hessian_eigenvalues, config["top_k_pca_number"])
+""""
 # --- 执行后续分析 (PCA, Cosine Similarity等) ---
 successive_pca_spectrum = Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors)
 first_last_pca_spectrum = First_Last_Record_Steps_PCA(recorded_steps_top_eigenvectors)
@@ -170,15 +177,20 @@ successive_cos_similarity = Successive_Record_Steps_COS_Similarity(recorded_step
 first_last_cos_similarity = First_Last_Record_Steps_COS_Similarity(recorded_steps_top_eigenvectors)
 successive_check_dominant_space = Successive_Check_Dominant_Space(recorded_steps_top_eigenvectors)
 first_last_check_dominant_space = First_Last_Check_Dominant_Space(recorded_steps_top_eigenvectors)
+"""
 
 plotting.plot_loss_curve(loss_history) 
+"""
 plotting.plot_hessian_eigenvalues(hessian_eigenvalues)
+"""
 
 """
 plotting.plot_cosine_similarity(successive_cos_similarity)
 """
 
+"""
 plotting.plot_pca_spectrum(successive_pca_spectrum)
+"""
 
 """
 plotting.plot_projection_norm(dominant_projection)
@@ -186,9 +198,9 @@ plotting.plot_gradient_norms(gradient_norms)
 plotting.plot_update_matrix_norms(update_matrix_norms)
 plotting.plot_cosine_similarity_to_last(first_last_cos_similarity)
 """
-
+"""
 plotting.plot_pca_top_k_eigenvectors(first_last_pca_spectrum)
-
+"""
 """
 plotting.plot_successive_check(successive_check_dominant_space)
 plotting.plot_first_last_check(first_last_check_dominant_space)
@@ -197,7 +209,8 @@ plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w2, title="W
 """
 plotting.plot_train_accuracy(train_accuracy_history)
 
-plotting.plot_top_2k_eigenvalues(hessian_eigenvalues)
+#plotting.plot_top_2k_eigenvalues(hessian_eigenvalues)
 plotting.plot_X_loss(X_gradient_loss)
+plotting.plot_curvature(curvature)
 # --- 完成 wandb 运行 ---
 wandb.finish()
