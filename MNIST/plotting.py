@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import wandb
 from MNIST_config import config
+import numpy as np
+import torch
 
 def plot_loss_curve(loss_history, title="Training Loss Curve"):
     plt.figure(figsize=(12, 8))
@@ -327,16 +329,58 @@ def plot_comparison_loss_with_phases(loss_history, convergence_step):
     plt.title("Loss Comparison Across Training Phases")
     plt.legend()
     plt.grid(True)
-    wandb.log({"Loss Comparison": wandb.Image(plt)})  # 修改了键名
+    wandb.log({"Loss Comparison": wandb.Image(plt)})  
     plt.show()
 
 def plot_curvature(curvature):
+    """
+    Plots the curvature data recorded as an array.
+
+    Args:
+        curvature (torch.Tensor, np.ndarray or list): An array or list containing curvature values.
+                                        Can be a PyTorch Tensor (on CPU or GPU).
+                                        Assumes data is recorded every 50 steps.
+    """
     plt.figure(figsize=(8, 5))
-    steps = [i * 50 for i in range(len(curvature))]
-    plt.plot(steps, curvature, label="Curvature", color="blue")
+    curvature_np = None 
+
+    if isinstance(curvature, torch.Tensor):
+     
+        try:
+            curvature_np = curvature.cpu().numpy()
+        except Exception as e:
+            print(f"Error converting single Tensor to numpy: {e}")
+            return 
+
+    elif isinstance(curvature, (list, tuple)):
+        processed_items = []
+        try:
+            for item in curvature:
+                if isinstance(item, torch.Tensor):
+                    processed_items.append(item.cpu().item()) 
+                else:
+                    processed_items.append(item)
+
+            curvature_np = np.asarray(processed_items)
+        except Exception as e:
+            print(f"Error processing list/tuple elements or converting to numpy array: {e}")
+            return 
+
+    else:
+        # 如果不是 Tensor, list, 或 tuple, 尝试直接转换为 NumPy 
+        try:
+            curvature_np = np.asarray(curvature)
+        except Exception as e:
+            print(f"Error: Input data is not a recognized type (Tensor, list, tuple) and cannot be directly converted to numpy. Original error: {e}")
+            return 
+
+    steps = [i * 50 for i in range(len(curvature_np))]
+
+    plt.plot(steps, curvature_np, label="Curvature", color="blue")
     plt.xlabel("Steps")
     plt.ylabel("Curvature")
-    plt.title("Curvature Curve during training") 
+    plt.title("Curvature Curve during training")
+    plt.legend()
     plt.grid(True)
     wandb.log({"Curvature Curve during training": wandb.Image(plt)})
     plt.show()

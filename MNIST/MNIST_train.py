@@ -130,7 +130,7 @@ for step in range(steps + 1):
         )
         # For 2 * top_k eigenvalues
         #eigenvalues = eigenvalues_and_eigenvectors[0]
-        eigenvalues = torch.from_numpy(eigenvalues_and_eigenvectors[0][:, :config["top_k_pca_number"]]).float().to(device) # 取前 top_k_pca_number 个特征向量
+        eigenvalues = eigenvalues_and_eigenvectors[0][:config["top_k_pca_number"]]
         top_eigenvectors = torch.from_numpy(eigenvalues_and_eigenvectors[1][:, :config["top_k_pca_number"]]).float().to(device) # 取前 top_k_pca_number 个特征向量
 
         hessian_eigenvalues[step] = eigenvalues

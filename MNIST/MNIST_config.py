@@ -26,7 +26,7 @@ config = {
     "torch_seed": 0,
     "learning_rate": 0.01,
     "batch_size": 50, # 添加 Batch Size [Source: 1452 in 2405.16002v3.pdf]
-    "steps": 20000, 
+    "steps": 40000, 
     #调整记录步数以适应更长的训练
     "record_steps": [100, 500, 1000, 3000, 5000, 10000, 15000, 20000],
     "input_dim": 784,
