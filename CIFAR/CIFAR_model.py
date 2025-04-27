@@ -22,7 +22,7 @@ class ConvNet(nn.Module):
             nn.MaxPool2d(2), #也可以替换成平均池化
 
             nn.Flatten(),
-            nn.Linear(2048, output_dim, bias=True)
+            nn.Linear(config["flatten_dim"], config["output_dim"], bias=True)
         )
 
     def forward(self, x):
