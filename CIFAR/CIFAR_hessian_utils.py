@@ -3,7 +3,6 @@ import numpy as np
 from CIFAR_config import device
 from pyhessian import hessian
 
-# 这里采用ghost batch的方式计算
 
 def compute_hessian_eigen_pyhessian(model, criterion, inputs, targets, top_k, device):
     """
@@ -37,8 +36,6 @@ def compute_hessian_eigen_pyhessian(model, criterion, inputs, targets, top_k, de
         raise TypeError(f"Expected eigenvectors to be a list, but got {type(eigenvectors_from_hessian)}")
 
     return eigenvalues, eigenvectors.T
-
-
 
 def compute_dominant_projection(top_eigenvectors, prev_top, k):
     """
