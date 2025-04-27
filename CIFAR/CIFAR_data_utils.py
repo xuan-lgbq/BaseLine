@@ -4,7 +4,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import Subset, DataLoader
 from CIFAR_config import config, device 
 
-def load_mnist_data(config, device):
+def load_cifar_data(config, device):
     """加载CIFAR10数据集,返回DataLoader和完整数据集张量"""
     # ... (transform_pipeline 和 dataset loading 不变) ...
     data_root = "CIFAR/datasets"
