@@ -80,37 +80,24 @@ for step in range(steps + 1):
     except StopIteration:
         data_iter = iter(train_loader)
         batch_X, batch_Y_labels = next(data_iter)
-    
-    # used ghost batch normalization with five ghost batches of size 1,000 (see I.2 for details).
-    ghost_batch_size = 1000
-    num_ghost_batches = config["train_samples"] // ghost_batch_size  # = 5 for 5000
+
+    batch_X, batch_Y_labels = batch_X.to(device), batch_Y_labels.to(device)
+    batch_Y_onehot = _to_one_hot(batch_Y_labels, config["output_dim"], device)
 
     optimizer.zero_grad()
-    for i in range(num_ghost_batches):
-        start = i * ghost_batch_size
-        end = (i + 1) * ghost_batch_size
+    y_predict_batch = model(batch_X)
+    loss_batch = loss_fn(y_predict_batch, batch_Y_onehot)
 
-        X_ghost = X_train_full[start:end].to(device)
-        Y_ghost = Y_train_onehot_full[start:end].to(device)
-
-        output_ghost = model(X_ghost)
-        loss_ghost = loss_fn(output_ghost, Y_ghost)
-        loss_ghost.backward()  # accumulate gradients
-
-    # 在所有 ghost batches 完成后平均梯度
-    for param in model.parameters():
-        if param.grad is not None:
-            param.grad /= num_ghost_batches  # 平均梯度
-
+    loss_batch.backward()
     optimizer.step()
+
 
     # Obeserving more data points
     if step % 50 == 0:
-        model.train() # 保证BN与训练时一致
+        model.eval() # 切换到评估模式
 
         # 计算并记录 Full Batch Loss 和 Accuracy
         with torch.no_grad():
-            model.eval()
             y_predict_full = model(X_train_full)
             loss_full = loss_fn(y_predict_full, Y_train_onehot_full)
             current_full_loss = loss_full.item()
@@ -122,28 +109,13 @@ for step in range(steps + 1):
             train_accuracy_history[step] = accuracy_full
             wandb.log({"train_accuracy": accuracy_full}, step=step) 
 
-        # Ghost batch gradient 采用batch的平均来估计full梯度
+        # 计算 Full Batch Gradient 和相关指标
         for p in model.parameters(): p.requires_grad_(True)
-        ghost_batch_size =1000
-        num_ghost_batches=config["train_samples"]//ghost_batch_size
-        grad_list=[] #每个ghost batch的独立梯度
-        for i in range(num_ghost_batches):
-            start=i*ghost_batch_size
-            end=(i+1)*ghost_batch_size
-            X_ghost = X_train_full[start:end].to(device)
-            Y_ghost = Y_train_onehot_full[start:end].to(device)
-            y_ghost=model(X_ghost)
-            loss_ghost=loss_fn(y_ghost,Y_ghost)
-            grads_ghost=torch.autograd.grad(loss_ghost,model.parameters(),retain_graph=True)
-            grad_list.append(grads_ghost)
-        
-        # 对每一层的梯度求平均
-        grads_avg=[]
-        for param_grads in zip(*grad_list):
-            grads_avg.append(torch.mean(torch.stack(param_grads),dim=0))
-        
-        
-        grad_flat_full = torch.cat([g.view(-1) for g in grads_avg if g is not None])
+        y_predict_full_for_grad = model(X_train_full)
+        loss_full_for_grad = loss_fn(y_predict_full_for_grad, Y_train_onehot_full)
+        grads_full = torch.autograd.grad(loss_full_for_grad, model.parameters(), create_graph=True, retain_graph=True)
+
+        grad_flat_full = torch.cat([g.view(-1) for g in grads_full if g is not None])
         grad_norm_full = torch.norm(grad_flat_full).item()
         gradient_norms[step] = grad_norm_full 
         wandb.log({f"gradient_norm_step_{step}": grad_norm_full}, step=step)
@@ -154,14 +126,11 @@ for step in range(steps + 1):
         wandb.log({f"update_matrix_norm_step_{step}": full_update_norm}, step=step)
 
         # 计算 Hessian
-        # For 2 * top_k eigenvalues
         eigenvalues_and_eigenvectors = compute_hessian_eigen_pyhessian(
         model, loss_fn, X_train_full, Y_train_onehot_full,
         top_k= 2 * config["top_k_pca_number"], device=device
         )
-        # For 2 * top_k eigenvalues
-        #eigenvalues = eigenvalues_and_eigenvectors[0]
-        eigenvalues = eigenvalues_and_eigenvectors[0][:config["top_k_pca_number"]]
+        eigenvalues = eigenvalues_and_eigenvectors[0]
         top_eigenvectors = torch.from_numpy(eigenvalues_and_eigenvectors[1][:, :config["top_k_pca_number"]]).float().to(device) # 取前 top_k_pca_number 个特征向量
 
         hessian_eigenvalues[step] = eigenvalues
@@ -211,17 +180,14 @@ first_last_check_dominant_space = First_Last_Check_Dominant_Space(recorded_steps
 """
 
 plotting.plot_loss_curve(loss_history) 
-"""
 plotting.plot_hessian_eigenvalues(hessian_eigenvalues)
-"""
 
 """
 plotting.plot_cosine_similarity(successive_cos_similarity)
 """
 
-"""
-plotting.plot_pca_spectrum(successive_pca_spectrum)
-"""
+#plotting.plot_pca_spectrum(successive_pca_spectrum)
+
 
 """
 plotting.plot_projection_norm(dominant_projection)
@@ -229,19 +195,21 @@ plotting.plot_gradient_norms(gradient_norms)
 plotting.plot_update_matrix_norms(update_matrix_norms)
 plotting.plot_cosine_similarity_to_last(first_last_cos_similarity)
 """
-"""
-plotting.plot_pca_top_k_eigenvectors(first_last_pca_spectrum)
-"""
+
+#plotting.plot_pca_top_k_eigenvectors(first_last_pca_spectrum)
+
 """
 plotting.plot_successive_check(successive_check_dominant_space)
 plotting.plot_first_last_check(first_last_check_dominant_space)
 plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w1, title="W1")
 plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w2, title="W2")
 """
+
 plotting.plot_train_accuracy(train_accuracy_history)
 
-plotting.plot_top_2k_eigenvalues(hessian_eigenvalues)
+#plotting.plot_top_2k_eigenvalues(hessian_eigenvalues)
 plotting.plot_X_loss(X_gradient_loss)
-plotting.plot_curvature(curvature)
+#plotting.plot_curvature(curvature)
+
 # --- 完成 wandb 运行 ---
 wandb.finish()
