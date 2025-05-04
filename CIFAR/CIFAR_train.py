@@ -169,6 +169,7 @@ for step in range(steps + 1):
 test_model(model, X_test_full, Y_test_labels_full, Y_test_onehot_full, device)
 
 curvature =  curvature_projection_trajectory(recorded_steps_top_eigenvectors, hessian_eigenvalues, config["top_k_pca_number"])
+
 """"
 # --- 执行后续分析 (PCA, Cosine Similarity等) ---
 successive_pca_spectrum = Successive_Record_Steps_PCA(recorded_steps_top_eigenvectors)
@@ -180,14 +181,18 @@ first_last_check_dominant_space = First_Last_Check_Dominant_Space(recorded_steps
 """
 
 plotting.plot_loss_curve(loss_history) 
+
+"""
 plotting.plot_hessian_eigenvalues(hessian_eigenvalues)
+"""
 
 """
 plotting.plot_cosine_similarity(successive_cos_similarity)
 """
 
-#plotting.plot_pca_spectrum(successive_pca_spectrum)
-
+"""
+plotting.plot_pca_spectrum(successive_pca_spectrum)
+"""
 
 """
 plotting.plot_projection_norm(dominant_projection)
@@ -195,9 +200,9 @@ plotting.plot_gradient_norms(gradient_norms)
 plotting.plot_update_matrix_norms(update_matrix_norms)
 plotting.plot_cosine_similarity_to_last(first_last_cos_similarity)
 """
-
-#plotting.plot_pca_top_k_eigenvectors(first_last_pca_spectrum)
-
+"""
+plotting.plot_pca_top_k_eigenvectors(first_last_pca_spectrum)
+"""
 """
 plotting.plot_successive_check(successive_check_dominant_space)
 plotting.plot_first_last_check(first_last_check_dominant_space)
@@ -207,9 +212,11 @@ plotting.plot_invariant_matrix_norms(recorded_steps_invariant_marix_w2, title="W
 
 plotting.plot_train_accuracy(train_accuracy_history)
 
-#plotting.plot_top_2k_eigenvalues(hessian_eigenvalues)
+plotting.plot_top_2k_eigenvalues(hessian_eigenvalues)
+
 plotting.plot_X_loss(X_gradient_loss)
-#plotting.plot_curvature(curvature)
+
+plotting.plot_curvature(curvature)
 
 # --- 完成 wandb 运行 ---
 wandb.finish()
