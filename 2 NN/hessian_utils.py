@@ -109,3 +109,18 @@ def compute_dominant_projection_matrix(top_eigenvectors, k):
         u_i = top_eigenvectors[:, i].reshape(-1, 1)
         P_k += np.dot(u_i, u_i.T)  # 累加外积
     return torch.from_numpy(P_k).float().to(device)  # 转为Tensor并指定设备
+
+def compute_max_eigenvalue(weight_matrix):
+    # 进行奇异值分解
+    U, S, vh = torch.linalg.svd(weight_matrix)
+    
+    # 获取最大奇异值
+    max_singular_value = S.max()
+    
+    # 计算最大奇异值的平方作为最大特征值
+    max_eigenvalue = max_singular_value ** 2 
+    
+    # 返回最大特征值的绝对值（如果需要的话）
+    return max_eigenvalue.item()  # 直接返回最大特征值的数值
+
+    

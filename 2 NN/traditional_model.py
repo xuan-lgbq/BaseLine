@@ -8,9 +8,11 @@ def balanced_init(input_dim, hidden_dim, output_dim, device):
     dims = [input_dim, hidden_dim, output_dim]
     d0, dN = dims[0], dims[-1]
     min_d = min(d0, dN)
+    
+    variance = 5.3045
 
     # Step 1: 采样 A
-    A = np.random.randn(dN, d0)
+    A = np.random.randn(dN, d0) * variance
 
     # Step 2: SVD 分解
     U, Sigma, Vt = svd(A, full_matrices=False)
