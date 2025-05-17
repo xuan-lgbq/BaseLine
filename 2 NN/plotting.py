@@ -16,6 +16,9 @@ def plot_loss_curve(loss_history):
     wandb.log({"loss_curve": wandb.Image(plt)})
     plt.show()
 
+def plot_top_eigenvalue():
+    and
+    
 def plot_hessian_eigenvalues(hessian_eigenvalues):
     plt.figure(figsize=(12, 8))
     # num_subplots = len(config["record_steps"])

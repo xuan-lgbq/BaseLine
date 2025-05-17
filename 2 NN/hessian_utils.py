@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from config import device
 from pyhessian import hessian
+from pyhessian.hessian import hessian
 
 # 计算 Hessian 矩阵的特征值和特征向量
 def compute_hessian_eigen(loss, params, top_k = 832):  # previously top_k = 5
@@ -45,8 +46,6 @@ def compute_hessian_eigen(loss, params, top_k = 832):  # previously top_k = 5
     sorted_indices = np.argsort(-eigenvalues)  # 降序排列
     return eigenvalues[sorted_indices], eigenvectors[:, sorted_indices][:, :top_k]
 
-from pyhessian import hessian
-
 """"""
 # This a function when running in remote, please check the input agruments before run.
 # Function to compute the eigenvalues and eigenvectors of the Hessian matrix (using pyhessian)
@@ -72,6 +71,29 @@ def compute_hessian_eigen_pyhessian(model, criterion, data_loader, top_k=5, devi
     eigenvectors = np.array(hessian_eigen[1])
     return eigenvalues, eigenvectors
 
+def compute_hessian_eigenvalues_pyhessian(model, criterion, data_loader, top_k=5, device='cuda'):
+    """
+    Compute only the top eigenvalues of the Hessian using pyhessian (without eigenvectors).
+
+    Args:
+        model: PyTorch model.
+        criterion: Loss function.
+        data_loader: Data loader used for computing the Hessian.
+        top_k: Number of top eigenvalues to compute.
+        device: Device to use.
+
+    Returns:
+        np.ndarray: Top-k eigenvalues.
+    """
+    hessian_computer = hessian(model=model, 
+                                       criterion=criterion, 
+                                       dataloader=data_loader, 
+                                       )
+
+    # 只返回特征值
+    hessian_eigen= hessian_computer.eigenvalues(maxIter=1000, tol=1e-8, top_n=top_k, )
+    eigenvalues = np.array(hessian_eigen[0])
+    return eigenvalues
 
 def compute_dominant_projection_matrix(top_eigenvectors, k):
     """
