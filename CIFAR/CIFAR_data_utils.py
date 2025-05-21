@@ -11,7 +11,7 @@ def load_cifar_data(config, device):
 
     transform_pipeline = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010]),  # CIFAR10的均值和标准差
+        transforms.Normalize(mean=[0.4918, 0.4825, 0.4456], std=[0.2487, 0.2366, 0.2585]),  # CIFAR10的均值和标准差
     ])
     train_set = datasets.CIFAR10(
         root=data_root,

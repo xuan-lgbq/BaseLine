@@ -12,17 +12,17 @@ class ConvNet(nn.Module):
         self.model = nn.Sequential(
             nn.Conv2d(3, 32,bias=True,kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.BatchNorm2d(32,track_running_stats=False), #在每个active layer后添加BN
+            nn.BatchNorm2d(32,track_running_stats=True), #在每个active layer后添加BN
             nn.MaxPool2d(2),
 
             nn.Conv2d(32, 32,bias=True,kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.BatchNorm2d(32,track_running_stats=False), 
+            nn.BatchNorm2d(32,track_running_stats=True), #确保是在每个ghostbatch上计算
 
             nn.MaxPool2d(2), #也可以替换成平均池化
 
             nn.Flatten(),
-            nn.Linear(config["flatten_dim"], config["output_dim"], bias=True)
+            nn.Linear(config["flatten_dim"],config["output_dim"], bias=True)
         )
 
     def forward(self, x):
